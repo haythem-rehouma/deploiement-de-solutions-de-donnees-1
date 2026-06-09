@@ -92,6 +92,17 @@ flowchart TD
 
 > _`git switch` est la commande **moderne** dédiée aux branches. `git checkout` fonctionne encore mais fait trop de choses à la fois — préférez `switch` pour les branches._
 
+**🔧 Mini-exercice —** Écrivez la commande qui crée la branche `feature-login` **et** bascule dessus en une seule opération.
+
+<details>
+<summary>✅ Voir une solution</summary>
+
+```bash
+git switch -c feature-login
+```
+
+</details>
+
 </details>
 
 <p align="right"><a href="#top">↑ Retour en haut</a></p>
@@ -136,6 +147,18 @@ git branch -d feature-connexion
 
 > _Règle simple : on se place **sur la branche de destination** (`main`), puis on fusionne la branche **source** dedans. « Je suis sur main, j'aspire feature »._
 
+**🔧 Mini-exercice —** Vous êtes sur `feature-login` et le travail est terminé. Écrivez les deux commandes pour fusionner cette branche dans `main`.
+
+<details>
+<summary>✅ Voir une solution</summary>
+
+```bash
+git switch main
+git merge feature-login
+```
+
+</details>
+
 </details>
 
 <p align="right"><a href="#top">↑ Retour en haut</a></p>
@@ -176,6 +199,15 @@ texte de la branche fusionnée (feature)
 3. `git add fichier` puis `git commit` pour finaliser la fusion.
 
 > _Un conflit n'est pas une erreur grave : c'est Git qui vous protège en refusant de deviner. Restez calme, lisez les deux versions, gardez la bonne._
+
+**🔧 Mini-exercice —** Citez les trois marqueurs que Git insère dans un fichier en conflit et qu'il faut supprimer après résolution.
+
+<details>
+<summary>✅ Voir une solution</summary>
+
+`<<<<<<<` , `=======` et `>>>>>>>`. Une fois le bon contenu choisi, on les supprime, puis on fait `git add` et `git commit`.
+
+</details>
 
 </details>
 
@@ -223,6 +255,17 @@ flowchart LR
 | `git blame fichier` | Qui a écrit cette ligne, et quand ? |
 
 > _L'historique Git est une **machine à remonter le temps**. Bien utilisé (avec de bons messages de commit), il permet de comprendre *pourquoi* le code est dans son état actuel._
+
+**🔧 Mini-exercice —** Écrivez la commande qui affiche l'historique de façon **compacte**, avec le **graphe** des branches et **toutes** les branches.
+
+<details>
+<summary>✅ Voir une solution</summary>
+
+```bash
+git log --oneline --graph --all
+```
+
+</details>
 
 </details>
 

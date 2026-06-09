@@ -46,6 +46,15 @@ flowchart LR
 | **Automatisation** | Les tâches répétitives sont scriptées, pas faites à la main |
 | **Rétroaction** | On mesure, on apprend, on améliore en continu |
 
+**🔧 Mini-exercice —** Le mot « DevOps » est la fusion de deux mots. Lesquels, et que désigne chacun ?
+
+<details>
+<summary>✅ Voir une solution</summary>
+
+**Dev**eloper (développement : écrire des fonctionnalités) + **Op**eration**s** (exploitation : faire tourner en production).
+
+</details>
+
 </details>
 
 <p align="right"><a href="#top">↑ Retour en haut</a></p>
@@ -143,6 +152,15 @@ flowchart LR
 
 > _Pourquoi automatiser ? Parce qu'un humain qui répète une tâche fait des erreurs et perd du temps. Une machine exécute la même procédure **mille fois sans se tromper**. C'est plus rapide, plus fiable et reproductible._
 
+**🔧 Mini-exercice —** Donnez deux raisons concrètes pour lesquelles on préfère automatiser une tâche répétitive plutôt que de la faire à la main.
+
+<details>
+<summary>✅ Voir une solution</summary>
+
+1. **Fiabilité** : une machine ne fait pas d'erreurs d'inattention, contrairement à un humain qui répète. 2. **Rapidité et reproductibilité** : la même procédure s'exécute identiquement et rapidement, autant de fois que nécessaire.
+
+</details>
+
 </details>
 
 <p align="right"><a href="#top">↑ Retour en haut</a></p>
@@ -176,6 +194,15 @@ flowchart LR
 - **Logs et métriques** : permettent de comprendre le comportement réel en production.
 
 > _Analogie : un thermostat. Il mesure en continu la température (rétroaction) et ajuste le chauffage immédiatement. Sans cette boucle, on ne saurait que la pièce est trop froide qu'en grelottant._
+
+**🔧 Mini-exercice —** À l'aide du tableau des coûts, indiquez à quel moment la correction d'un bug coûte le plus cher, et pourquoi détecter tôt est préférable.
+
+<details>
+<summary>✅ Voir une solution</summary>
+
+C'est **en production, signalé par un client** que la correction coûte le plus cher (💲💲💲💲). Détecter tôt (pendant le développement ou les tests automatisés) réduit fortement le coût, car le problème est corrigé avant d'atteindre les utilisateurs.
+
+</details>
 
 </details>
 
@@ -235,6 +262,15 @@ flowchart LR
 | **Collaboration des équipes** | Silos, conflits | Objectif commun |
 
 > _Les entreprises les plus performantes déploient des centaines de fois par jour avec un taux d'échec très bas. Ce n'est pas magique : c'est le résultat de la culture + automatisation + rétroaction._
+
+**🔧 Mini-exercice —** D'après le tableau, comparez la **fréquence des livraisons** avec et sans DevOps.
+
+<details>
+<summary>✅ Voir une solution</summary>
+
+Sans DevOps : **quelques fois par an**. Avec DevOps : **plusieurs fois par jour**.
+
+</details>
 
 </details>
 

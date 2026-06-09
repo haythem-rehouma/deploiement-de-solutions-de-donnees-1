@@ -80,6 +80,17 @@ flowchart LR
 
 > _`origin` n'est qu'un **nom par convention** pour « le dépôt distant principal ». On pourrait l'appeler autrement, mais tout le monde utilise `origin` — gardez cette convention._
 
+**🔧 Mini-exercice —** Écrivez la commande qui lie votre dépôt local au dépôt distant `https://github.com/moi/projet.git` sous l'alias `origin`.
+
+<details>
+<summary>✅ Voir une solution</summary>
+
+```bash
+git remote add origin https://github.com/moi/projet.git
+```
+
+</details>
+
 </details>
 
 <p align="right"><a href="#top">↑ Retour en haut</a></p>
@@ -115,6 +126,17 @@ flowchart LR
 | `git push` | Tous les push suivants |
 
 > _L'option `-u` (ou `--set-upstream`) ne sert qu'une fois par branche : elle relie votre branche locale à sa jumelle distante. Ensuite, `git push` et `git pull` savent quoi faire tout seuls._
+
+**🔧 Mini-exercice —** Écrivez la commande du **premier** push de la branche `main` vers `origin`, en établissant le suivi.
+
+<details>
+<summary>✅ Voir une solution</summary>
+
+```bash
+git push -u origin main
+```
+
+</details>
 
 </details>
 
@@ -155,6 +177,17 @@ flowchart LR
 
 > _Bonne habitude : faites `git pull` **avant de commencer à travailler** et **avant de pousser**. Cela évite la plupart des conflits, car vous partez toujours de la version la plus récente._
 
+**🔧 Mini-exercice —** Quelle commande récupère les commits distants **sans** les fusionner dans votre branche, pour les inspecter d'abord ?
+
+<details>
+<summary>✅ Voir une solution</summary>
+
+```bash
+git fetch
+```
+
+</details>
+
 </details>
 
 <p align="right"><a href="#top">↑ Retour en haut</a></p>
@@ -194,6 +227,17 @@ flowchart LR
 | Pour publier un projet **existant en local** | Pour récupérer un projet **existant à distance** |
 
 > _Résumé : on **clone** quand le projet existe déjà en ligne ; on fait **`init` + `remote add` + `push`** quand on part d'un projet local à publier._
+
+**🔧 Mini-exercice —** Écrivez la commande qui clone le dépôt `https://github.com/moi/projet.git` dans un dossier local nommé `mon-dossier`.
+
+<details>
+<summary>✅ Voir une solution</summary>
+
+```bash
+git clone https://github.com/moi/projet.git mon-dossier
+```
+
+</details>
 
 </details>
 

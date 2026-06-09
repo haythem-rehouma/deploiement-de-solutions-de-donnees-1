@@ -68,6 +68,15 @@ flowchart LR
 
 > _Chaque module ajoute une brique. À la fin, vous aurez assemblé une chaîne DevOps complète — c'est l'objet du projet de session (module 15)._
 
+**🔧 Mini-exercice —** Parmi les 8 compétences du tableau, identifiez celle qui concerne la **surveillance** d'une application en production et nommez le module correspondant.
+
+<details>
+<summary>✅ Voir une solution</summary>
+
+Compétence n° 7 : **Surveiller** une solution en production (monitoring & observabilité). Elle est traitée au **module 13** (Monitoring & observabilité).
+
+</details>
+
 </details>
 
 <p align="right"><a href="#top">↑ Retour en haut</a></p>
@@ -130,6 +139,15 @@ flowchart TD
 | **Éditeur (VS Code)** | Écriture du code | tous |
 
 > _Conseil : installez Git et créez votre compte GitHub dès aujourd'hui — c'est la pratique de fin de leçon._
+
+**🔧 Mini-exercice —** Dans le tableau ci-dessus, repérez l'outil utilisé pour la **conteneurisation** et indiquez à quel module il est introduit.
+
+<details>
+<summary>✅ Voir une solution</summary>
+
+L'outil est **Docker**, introduit au **module 06**.
+
+</details>
 
 </details>
 
@@ -222,6 +240,15 @@ flowchart TD
 | 13 | Monitoring & observabilité |
 | 14 | Atelier d'intégration |
 | 15 | Projet de session |
+
+**🔧 Mini-exercice —** À l'aide du tableau des 15 modules, citez les **trois outils d'infrastructure et d'exploitation** (modules 11 à 13).
+
+<details>
+<summary>✅ Voir une solution</summary>
+
+Module 11 : **Ansible**, module 12 : **Terraform**, module 13 : **Monitoring & observabilité**.
+
+</details>
 
 </details>
 

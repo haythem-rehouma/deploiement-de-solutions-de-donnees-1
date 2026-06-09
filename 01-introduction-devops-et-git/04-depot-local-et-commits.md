@@ -78,6 +78,18 @@ git status
 
 > _⚠️ Ne supprimez jamais le dossier `.git/` : il **contient tout l'historique**. Le supprimer revient à perdre le versionnement (mais pas vos fichiers actuels)._
 
+**🔧 Mini-exercice —** Écrivez la commande qui transforme le dossier courant en dépôt Git, puis celle qui affiche son état.
+
+<details>
+<summary>✅ Voir une solution</summary>
+
+```bash
+git init
+git status
+```
+
+</details>
+
 </details>
 
 <p align="right"><a href="#top">↑ Retour en haut</a></p>
@@ -121,6 +133,17 @@ git status
 | `git status` | Affiche l'état de chaque fichier |
 
 > _`git status` est votre meilleur ami : utilisez-le **avant et après** chaque `git add` pour voir exactement ce que Git s'apprête à enregistrer._
+
+**🔧 Mini-exercice —** Vous venez de modifier `index.html` et `style.css`. Écrivez la commande qui prépare (stage) **uniquement** `index.html`.
+
+<details>
+<summary>✅ Voir une solution</summary>
+
+```bash
+git add index.html
+```
+
+</details>
 
 </details>
 
@@ -167,6 +190,18 @@ git log --oneline   # version compacte
 ```
 
 > _Un bon commit est **atomique** : il fait une seule chose cohérente. Évitez le commit fourre-tout « plein de trucs » — préférez plusieurs petits commits clairs._
+
+**🔧 Mini-exercice —** Préparez tous vos changements et créez un commit dont le message est « Ajoute la page de contact ».
+
+<details>
+<summary>✅ Voir une solution</summary>
+
+```bash
+git add .
+git commit -m "Ajoute la page de contact"
+```
+
+</details>
 
 </details>
 
@@ -251,6 +286,17 @@ flowchart LR
 ```
 
 > _⚠️ Règle d'or de sécurité : **ne jamais committer de mots de passe, clés API ou secrets**. Une fois dans l'historique Git, un secret y reste — même supprimé plus tard. Mettez `.env` dans `.gitignore` dès le départ._
+
+**🔧 Mini-exercice —** Écrivez la ligne à ajouter dans un `.gitignore` pour empêcher Git de versionner le fichier de secrets `.env`.
+
+<details>
+<summary>✅ Voir une solution</summary>
+
+```
+.env
+```
+
+</details>
 
 </details>
 

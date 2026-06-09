@@ -94,6 +94,18 @@ sudo dnf install git
 
 > _Conseil : acceptez les options par défaut de l'installeur Windows, sauf si vous savez ce que vous changez. Elles conviennent à la grande majorité des cas._
 
+**🔧 Mini-exercice —** Écrivez la commande d'installation de Git sur une distribution Linux **Debian/Ubuntu**.
+
+<details>
+<summary>✅ Voir une solution</summary>
+
+```bash
+sudo apt update
+sudo apt install git
+```
+
+</details>
+
 </details>
 
 <p align="right"><a href="#top">↑ Retour en haut</a></p>
@@ -135,6 +147,18 @@ git config --global core.autocrlf true
 
 > _La configuration `--global` se fait **une seule fois** par machine. Ensuite, tous vos dépôts en héritent automatiquement._
 
+**🔧 Mini-exercice —** Écrivez les deux commandes qui configurent en global votre **nom** et votre **courriel** Git.
+
+<details>
+<summary>✅ Voir une solution</summary>
+
+```bash
+git config --global user.name "Prénom Nom"
+git config --global user.email "vous@exemple.com"
+```
+
+</details>
+
 </details>
 
 <p align="right"><a href="#top">↑ Retour en haut</a></p>
@@ -169,6 +193,18 @@ flowchart LR
 ```
 
 > _Si `git --version` renvoie « commande introuvable », Git n'est pas installé, ou son dossier n'est pas dans la variable `PATH`. Sous Windows, relancer un nouveau terminal après l'installation résout souvent le problème._
+
+**🔧 Mini-exercice —** Lancez la commande qui affiche la **version de Git** installée sur votre machine.
+
+<details>
+<summary>✅ Voir une solution</summary>
+
+```bash
+git --version
+# → git version 2.43.0 (ou similaire)
+```
+
+</details>
 
 </details>
 
@@ -210,6 +246,19 @@ Ensuite, `git st` équivaut à `git status`, `git lg` affiche un joli graphe de 
 | `git lg` | `git log --oneline --graph --all` | Historique lisible |
 
 > _Les alias sont un petit confort qui fait gagner du temps tous les jours. Optionnels, mais appréciés._
+
+**🔧 Mini-exercice —** Créez un alias global `st` qui exécute `git status`, puis indiquez comment l'utiliser.
+
+<details>
+<summary>✅ Voir une solution</summary>
+
+```bash
+git config --global alias.st status
+```
+
+Ensuite, `git st` équivaut à `git status`.
+
+</details>
 
 </details>
 
