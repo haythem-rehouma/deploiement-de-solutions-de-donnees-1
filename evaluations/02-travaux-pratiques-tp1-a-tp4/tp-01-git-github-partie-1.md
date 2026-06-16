@@ -10,6 +10,23 @@
 
 ---
 
+## À lire en premier : autonomie et évaluation
+
+> **Le professeur N'INTERVIENT PAS pendant l'activité.** Personne n'a besoin d'approuver ni de fusionner vos pull requests à votre place : vous gérez **tout vous-mêmes** — créer une branche, vous faire relire **par un camarade**, fusionner, et résoudre les conflits.
+>
+> **C'est VOTRE responsabilité d'aller jusqu'au bout.** Si vous cassez quelque chose (push rejeté, conflit, mauvaise fusion), c'est **normal et formateur** : lisez le message, faites `git pull`, résolvez, recommencez. Le professeur **voit tout** dans l'historique, mais ne répare **rien** à votre place.
+
+> **Comment le professeur vous évalue :** pas en direct, mais sur **l'historique du dépôt à la date de remise**. Vous n'avez **rien d'autre à remettre** que vos commits. Il s'appuie sur :
+>
+> - `git shortlog -sn --all` → le **classement des commits** (le champion en haut) ;
+> - `git log --author="Prénom Nom"` → **vos** commits (C1 → C14) ;
+> - les onglets GitHub **Insights > Contributors** et **Pull requests** ;
+> - votre dossier `eleves/prenom-nom/`, le fichier partagé `TRESOR.md` (conflits résolus) et `QUETES.md`.
+>
+> Le détail des points est dans le **Barème de correction** plus bas.
+
+---
+
 ## C'est un concours !
 
 Toute la classe travaille sur **un seul dépôt partagé** : `tp1`. Au-delà de la note, c'est une **compétition amicale** :
