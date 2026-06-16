@@ -40,7 +40,7 @@ Toute la classe travaille sur **un seul dépôt partagé** : `tp1`. Au-delà de 
 ```mermaid
 flowchart TD
     p0["Partie 0 — Preparation"] --> p1
-    p1["Etape 1 — Mon mini-projet local<br/>C1 a C7 : 7 commits"] --> p2
+    p1["Etape 1 — Mon mini-projet local<br/>C1 a C6 commits + C7 push"] --> p2
     p2["Etape 2 — Branches et fusion<br/>C8 a C10"] --> p3
     p3["Etape 3 — Pull request<br/>C11 a C12"] --> p4
     p4["Etape 4 — Conflits partages<br/>C13 a C14"] --> p5
@@ -78,24 +78,52 @@ git config --global user.name "Prénom Nom"
 git config --global user.email "votre.courriel@exemple.com"
 ```
 
-4. **Créez votre dossier personnel** (remplacez `prenom-nom`, sans accent ni espace) :
+4. **Créez votre dossier personnel** (remplacez `prenom-nom`, sans accent ni espace).
+
+Au départ, le dépôt `tp1` ressemble à ceci :
+
+```text
+tp1/                      <- la racine du depot (NE PAS y toucher pour l'instant)
+├── README.md
+├── TRESOR.md
+├── QUETES.md
+├── .gitignore
+├── eleves/               <- le dossier de TOUS les etudiants
+└── indices/
+```
+
+**Exemple concret :** si votre identifiant est `haythem-rehouma`, vous tapez :
 
 ```bash
-mkdir -p eleves/prenom-nom
-cd eleves/prenom-nom
+mkdir -p eleves/haythem-rehouma
+cd eleves/haythem-rehouma
+```
+
+Vous êtes maintenant **dans votre dossier**, encore **vide** :
+
+```text
+tp1/
+└── eleves/
+    └── haythem-rehouma/   <- VOUS ETES ICI (vide pour l'instant)
 ```
 
 > **Réflexe d'or, à chaque fois :** `git status` avant `git add`, et `git pull` avant `git push`.
 
 ---
 
-## Étape 1 — Mon mini-projet local (7 commits : C1 → C7)
+## Étape 1 — Mon mini-projet local (6 commits + 1 push : C1 → C7)
 
-Vous construisez un petit « carnet de bord » dans **votre dossier**. Faites **un commit par étape** (chaque commit compte au classement !).
+Vous construisez un petit « carnet de bord » **uniquement dans votre dossier** `eleves/prenom-nom/` (où vous êtes déjà après l'Étape 0). Faites **un commit par étape** (chaque commit compte au classement !).
 
-### C1 — Le README
+> **Important — il n'y a pas de contradiction :** les fichiers que vous créez ici (`carnet.md`, `.gitignore`, `profil.md`, `taches.md`) sont **les vôtres, dans VOTRE dossier**. Ils sont **distincts** des fichiers `README.md`, `.gitignore`, `TRESOR.md` et `QUETES.md` qui existent déjà **à la racine** du dépôt `tp1`. À cette étape, on **ne touche jamais** à ceux de la racine.
+>
+> Note : **C7 est une publication (`git push`), pas un nouveau commit** — d'où « 6 commits + 1 push ».
+>
+> Dans tous les schémas ci-dessous, on prend l'exemple `haythem-rehouma`. **Remplacez-le par votre identifiant.**
 
-Créez `README.md` dans votre dossier :
+### C1 — Le carnet de bord
+
+Créez un fichier nommé `carnet.md` **dans votre dossier** `eleves/haythem-rehouma/` et écrivez dedans :
 
 ```markdown
 # Carnet de bord — Prénom Nom
@@ -103,16 +131,23 @@ Créez `README.md` dans votre dossier :
 Projet du TP1 : Git et GitHub.
 ```
 
-Puis :
+Puis, dans le terminal :
 
 ```bash
-git add README.md
-git commit -m "C1 - Ajouter le README du carnet de bord"
+git add carnet.md
+git commit -m "C1 - Ajouter mon carnet de bord"
+```
+
+Après C1, votre dossier contient :
+
+```text
+eleves/haythem-rehouma/
+└── carnet.md            <- NOUVEAU (cree en C1)
 ```
 
 ### C2 — Le fichier .gitignore
 
-Créez `.gitignore` (au moins une entrée) :
+Git autorise un `.gitignore` **par dossier**. Créez le vôtre dans `eleves/haythem-rehouma/.gitignore` (il est propre à votre dossier, **différent** de celui de la racine) et écrivez dedans :
 
 ```text
 .env
@@ -122,12 +157,20 @@ Créez `.gitignore` (au moins une entrée) :
 
 ```bash
 git add .gitignore
-git commit -m "C2 - Ajouter un .gitignore"
+git commit -m "C2 - Ajouter un .gitignore dans mon dossier"
+```
+
+Après C2 :
+
+```text
+eleves/haythem-rehouma/
+├── carnet.md
+└── .gitignore           <- NOUVEAU (cree en C2)
 ```
 
 ### C3 — Ma fiche profil
 
-Créez `profil.md` :
+Créez `profil.md` dans le même dossier :
 
 ```markdown
 # Profil
@@ -142,9 +185,18 @@ git add profil.md
 git commit -m "C3 - Ajouter ma fiche profil"
 ```
 
+Après C3 :
+
+```text
+eleves/haythem-rehouma/
+├── carnet.md
+├── .gitignore
+└── profil.md            <- NOUVEAU (cree en C3)
+```
+
 ### C4 — Une liste de tâches
 
-Créez `taches.md` :
+Créez `taches.md` dans le même dossier :
 
 ```markdown
 # Mes tâches DevOps
@@ -159,9 +211,19 @@ git add taches.md
 git commit -m "C4 - Ajouter ma liste de tâches"
 ```
 
-### C5 — Compléter le README
+Après C4 :
 
-Ajoutez une section à la fin de `README.md` :
+```text
+eleves/haythem-rehouma/
+├── carnet.md
+├── .gitignore
+├── profil.md
+└── taches.md            <- NOUVEAU (cree en C4)
+```
+
+### C5 — Compléter le carnet
+
+Ici, **on ne crée pas** de fichier : on **modifie** un fichier existant. Ouvrez **votre** `carnet.md` et ajoutez cette section à la fin (les fichiers cités existent déjà depuis C3 et C4) :
 
 ```markdown
 
@@ -172,31 +234,60 @@ Ajoutez une section à la fin de `README.md` :
 ```
 
 ```bash
-git add README.md
-git commit -m "C5 - Documenter le contenu dans le README"
+git add carnet.md
+git commit -m "C5 - Documenter le contenu dans mon carnet"
+```
+
+Après C5 (aucun nouveau fichier, `carnet.md` est juste enrichi) :
+
+```text
+eleves/haythem-rehouma/
+├── carnet.md            <- MODIFIE (section "Contenu" ajoutee)
+├── .gitignore
+├── profil.md
+└── taches.md
 ```
 
 ### C6 — Cocher une tâche
 
-Dans `taches.md`, cochez une case (`- [x] ...`) :
+Toujours sans créer de fichier : ouvrez `taches.md` et **cochez une case** (transformez `- [ ]` en `- [x]`) :
 
 ```bash
 git add taches.md
 git commit -m "C6 - Cocher la première tâche réalisée"
 ```
 
+Après C6 :
+
+```text
+eleves/haythem-rehouma/
+├── carnet.md
+├── .gitignore
+├── profil.md
+└── taches.md            <- MODIFIE (une case cochee)
+```
+
 ### C7 — Publier sur GitHub
 
-Envoyez tout votre travail sur le dépôt partagé :
+Vous **quittez votre dossier** pour revenir à la racine du dépôt, puis vous **envoyez** tout votre travail sur GitHub :
 
 ```bash
-cd ../..          # revenir à la racine du dépôt
+cd ../..          # remonter de eleves/haythem-rehouma vers la racine tp1
 git status
 git pull --rebase
 git push
 ```
 
-> Vérifiez sur GitHub que votre dossier `eleves/prenom-nom/` apparaît bien.
+Schéma de ce qui se passe :
+
+```text
+Votre PC (local)                         GitHub (en ligne)
+eleves/haythem-rehouma/    --- push -->   tp1/eleves/haythem-rehouma/
+  carnet.md, .gitignore,                    (vos 6 commits apparaissent
+  profil.md, taches.md                       pour toute la classe)
+```
+
+> Vérifiez sur GitHub que votre dossier `eleves/haythem-rehouma/` apparaît bien.
 
 **Vérification :** `git log --oneline` montre C1 à C6, et votre dossier est visible sur GitHub.
 
@@ -204,13 +295,21 @@ git push
 
 ## Étape 2 — Branches et fusion (3 commits : C8 → C10)
 
+Une **branche** est comme une copie de travail séparée. On y bricole sans risque, puis on **fusionne** dans `main`.
+
+```text
+main ────●────●────●            <- la branche principale
+                    \
+                     ●          <- votre branche feature/... (vos commits C8, C9)
+```
+
 ### C8 — Créer une branche et y travailler
 
 ```bash
 git switch -c feature/prenom-nom-bonus
 ```
 
-Dans votre dossier, créez `eleves/prenom-nom/bonus.md` :
+Créez `bonus.md` dans votre dossier, puis écrivez dedans :
 
 ```markdown
 # Section bonus
@@ -221,6 +320,17 @@ Ajoutée depuis une branche dédiée.
 ```bash
 git add eleves/prenom-nom/bonus.md
 git commit -m "C8 - Ajouter une section bonus sur une branche"
+```
+
+Après C8, votre dossier (sur la branche) :
+
+```text
+eleves/haythem-rehouma/
+├── carnet.md
+├── .gitignore
+├── profil.md
+├── taches.md
+└── bonus.md             <- NOUVEAU (sur la branche feature/...)
 ```
 
 ### C9 — Un second commit sur la branche
@@ -254,7 +364,7 @@ git branch -d feature/prenom-nom-bonus
 git switch -c indice/prenom-nom
 ```
 
-Créez `indices/prenom-nom.md` (créez le dossier `indices/` s'il n'existe pas) :
+Attention : cette fois le fichier va dans le dossier **`indices/`** à la racine (pas dans votre dossier `eleves/`). Créez `indices/prenom-nom.md` :
 
 ```markdown
 # Indice de Prénom Nom
@@ -266,6 +376,16 @@ Créez `indices/prenom-nom.md` (créez le dossier `indices/` s'il n'existe pas) 
 git add indices/prenom-nom.md
 git commit -m "C11 - Ajouter mon indice"
 git push -u origin indice/prenom-nom
+```
+
+Après C11 :
+
+```text
+tp1/
+├── eleves/
+│   └── haythem-rehouma/        <- votre travail des etapes 1 et 2
+└── indices/
+    └── haythem-rehouma.md      <- NOUVEAU (votre indice, sur la branche indice/...)
 ```
 
 ### C12 — Ouvrir et fusionner la pull request
@@ -289,6 +409,15 @@ gh pr create --base main --head indice/prenom-nom --title "Indice de Prénom Nom
 ## Étape 4 — Conflits partagés (2 commits : C13 → C14)
 
 > Ici tout le monde modifie **la même ligne** du **même fichier** `TRESOR.md` : les conflits sont **garantis et voulus**.
+
+Cette fois, on touche un fichier **partagé par toute la classe**, à la racine :
+
+```text
+tp1/
+├── TRESOR.md            <- TOUT LE MONDE modifie la meme ligne ici (zone de conflits)
+├── eleves/
+└── indices/
+```
 
 ### C13 — Tenter de publier votre part du code
 
@@ -357,13 +486,13 @@ Le fichier `QUETES.md` contient des **micro-quêtes optionnelles**. Réclamez-en
 
 | Commit | Description | Étape |
 |---|---|---|
-| C1 | Ajouter le README | 1 |
-| C2 | Ajouter un `.gitignore` | 1 |
+| C1 | Ajouter mon carnet de bord | 1 |
+| C2 | Ajouter un `.gitignore` (dans mon dossier) | 1 |
 | C3 | Ajouter la fiche profil | 1 |
 | C4 | Ajouter la liste de tâches | 1 |
-| C5 | Documenter le contenu | 1 |
+| C5 | Documenter le contenu du carnet | 1 |
 | C6 | Cocher une tâche | 1 |
-| C7 | Pousser sur GitHub | 1 |
+| C7 | Publier sur GitHub (`push`, pas un commit) | 1 |
 | C8 | Section bonus (branche) | 2 |
 | C9 | Compléter la section bonus | 2 |
 | C10 | Fusionner la branche | 2 |
