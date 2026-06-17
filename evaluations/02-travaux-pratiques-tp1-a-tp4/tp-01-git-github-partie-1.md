@@ -438,6 +438,81 @@ git commit -m "C13 - Inscrire ma part du code secret"
 git push
 ```
 
+ > Ici essayez de communiquer avec un.e collègue pourqu'elle/il fasse un push avant vous pour déclancher le conflit. 
+
+## Option2 (si ce n'est pas possible de communiquer avec un.e collègue)
+- Provoquez un conflit inter-branche 
+
+## Proposition de Gilbert pour l'option 2 -  C13 — Conflit simulé avec branches locales
+
+<details> 
+
+
+<summary> Idée : Créer deux branches locales </summary> 
+
+  Créer deux branches locales qui modifient **la même ligne** de `TRESOR.md`,
+  puis fusionner pour provoquer un vrai conflit résolu manuellement (C13 + C14).
+
+  ---
+
+  ## Étapes
+
+  ### 1 — Branche « adversaire » (simule un camarade)
+
+  ```bash
+  git switch main
+  git switch -c conflit/adversaire
+  # Modifier TRESOR.md : CODE = "Haythem-7 + Hassen-7 + Adversaire-9"
+  git add TRESOR.md
+  git commit -m "Simule un camarade qui pousse avant moi"
+
+  2 — Branche « gilbert » (ma vraie contribution)
+
+  git switch main
+  git switch -c conflit/gilbert
+  # Modifier TRESOR.md : CODE = "Haythem-7 + Hassen-7 + Gilbert-7"
+  git add TRESOR.md
+  git commit -m "C13 - Inscrire ma part du code secret"
+
+  3 — Fusionner → conflit garanti
+
+  git switch main
+  git merge conflit/adversaire   # passe (premier arrivé)
+  git merge conflit/gilbert      # ← CONFLIT sur la ligne CODE
+
+  4 — Résoudre (C14)
+
+  Ouvrir TRESOR.md, garder les deux contributions :
+
+  CODE = "Haythem-7 + Hassen-7 + Adversaire-9 + Gilbert-7"
+
+  git add TRESOR.md
+  git commit -m "C14 - Résoudre le conflit du code secret"
+  git branch -d conflit/adversaire conflit/gilbert
+
+  ---
+  Résultat dans git log
+
+  ┌────────┬────────────────────────────────────┐
+  │ Commit │              Message               │
+  ├────────┼────────────────────────────────────┤
+  │ C14    │ Résoudre le conflit du code secret │
+  ├────────┼────────────────────────────────────┤
+  │ Merge  │ Merge branch 'conflit/adversaire'  │
+  ├────────┼────────────────────────────────────┤
+  │ C13    │ Inscrire ma part du code secret    │
+  └────────┴────────────────────────────────────┘
+
+  ---
+  Avantage
+  
+  - Conflit 100 % local — aucun push avant résolution
+  - Historique propre avec les deux commits exigés (C13 + C14)
+  - Démontre la maîtrise des branches et de la résolution de conflits
+
+ </details>
+
+
 ### C14 — Résoudre le conflit
 
 Si quelqu'un a poussé avant vous, le `push` est **rejeté** (`rejected — fetch first`). C'est normal :
