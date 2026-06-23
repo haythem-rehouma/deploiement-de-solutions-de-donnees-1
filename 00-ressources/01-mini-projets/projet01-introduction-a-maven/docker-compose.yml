@@ -1,0 +1,14 @@
+services:
+  maven:
+    image: maven:3.9-eclipse-temurin-17
+    working_dir: /app
+    volumes:
+      # Le projet du dossier courant est monte dans le conteneur
+      - .:/app
+      # Cache des dependances Maven (evite de tout retelecharger a chaque fois)
+      - maven-repo:/root/.m2
+    entrypoint: ["mvn"]
+    command: ["test"]
+
+volumes:
+  maven-repo:
