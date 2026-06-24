@@ -443,72 +443,172 @@ git push
 ## Option2 (si ce n'est pas possible de communiquer avec un.e collègue)
 - Provoquez un conflit inter-branche 
 
-## Proposition de Gilbert pour l'option 2 -  C13 — Conflit simulé avec branches locales
-
 <details> 
 
-<summary> Idée : Créer deux branches locales </summary> 
+<summary>Proposition de Gilbert pour l'option 2 -  C13 — Conflit simulé avec branches locales </summary>
 
-  Créer deux branches locales qui modifient **la même ligne** de `TRESOR.md`,
-  puis fusionner pour provoquer un vrai conflit résolu manuellement (C13 + C14).
+## Idée
 
-  ---
+Créer deux branches locales qui modifient **la même ligne** de `TRESOR.md`, puis les fusionner afin de provoquer un vrai conflit Git à résoudre manuellement.
 
-  ## Étapes
+Cette démonstration permet de réaliser les exigences **C13** et **C14** sans effectuer de `push` avant la résolution.
 
-  ### 1 — Branche « adversaire » (simule un camarade)
+---
 
-  ```bash
-  git switch main
-  git switch -c conflit/adversaire
-  # Modifier TRESOR.md : CODE = "Haythem-7 + Hassen-7 + Adversaire-9"
-  git add TRESOR.md
-  git commit -m "Simule un camarade qui pousse avant moi"
+## 1 — Créer la branche « adversaire »
 
-  2 — Branche « gilbert » (ma vraie contribution)
+Cette branche simule la contribution d’un camarade.
 
-  git switch main
-  git switch -c conflit/gilbert
-  # Modifier TRESOR.md : CODE = "Haythem-7 + Hassen-7 + Gilbert-7"
-  git add TRESOR.md
-  git commit -m "C13 - Inscrire ma part du code secret"
-
-  3 — Fusionner → conflit garanti
-
-  git switch main
-  git merge conflit/adversaire   # passe (premier arrivé)
-  git merge conflit/gilbert      # ← CONFLIT sur la ligne CODE
-
-  4 — Résoudre (C14)
-
-  Ouvrir TRESOR.md, garder les deux contributions :
-
-  CODE = "Haythem-7 + Hassen-7 + Adversaire-9 + Gilbert-7"
-
-  git add TRESOR.md
-  git commit -m "C14 - Résoudre le conflit du code secret"
-  git branch -d conflit/adversaire conflit/gilbert
+```bash
+git switch main
+git switch -c conflit/adversaire
 ```
-  ---
-  Résultat dans git log
 
-  ┌────────┬────────────────────────────────────┐
-  │ Commit │              Message               │
-  ├────────┼────────────────────────────────────┤
-  │ C14    │ Résoudre le conflit du code secret │
-  ├────────┼────────────────────────────────────┤
-  │ Merge  │ Merge branch 'conflit/adversaire'  │
-  ├────────┼────────────────────────────────────┤
-  │ C13    │ Inscrire ma part du code secret    │
-  └────────┴────────────────────────────────────┘
+Modifier la ligne `CODE` dans `TRESOR.md` :
 
-  ---
-  Avantage
-  
-  - Conflit 100 % local — aucun push avant résolution
-  - Historique propre avec les deux commits exigés (C13 + C14)
-  - Démontre la maîtrise des branches et de la résolution de conflits
+```text
+CODE = "Haythem-7 + Hassen-7 + Adversaire-9"
+```
 
+Enregistrer la modification :
+
+```bash
+git add TRESOR.md
+git commit -m "Simule un camarade qui pousse avant moi"
+```
+
+---
+
+## 2 — Créer la branche « gilbert »
+
+Revenir sur `main`, puis créer une deuxième branche à partir du même point de départ.
+
+```bash
+git switch main
+git switch -c conflit/gilbert
+```
+
+Modifier exactement la même ligne dans `TRESOR.md` :
+
+```text
+CODE = "Haythem-7 + Hassen-7 + Gilbert-7"
+```
+
+Enregistrer la modification :
+
+```bash
+git add TRESOR.md
+git commit -m "C13 - Inscrire ma part du code secret"
+```
+
+---
+
+## 3 — Fusionner la branche « adversaire »
+
+Revenir sur `main` :
+
+```bash
+git switch main
+```
+
+Fusionner la branche `conflit/adversaire` avec `--no-ff` afin de créer explicitement un commit de fusion :
+
+```bash
+git merge --no-ff conflit/adversaire   -m "Fusionner la contribution de l'adversaire"
+```
+
+> Sans `--no-ff`, Git pourrait effectuer un simple **fast-forward** et ne pas créer de commit de fusion distinct.
+
+---
+
+## 4 — Provoquer le conflit
+
+Fusionner ensuite la branche `conflit/gilbert` :
+
+```bash
+git merge conflit/gilbert
+```
+
+Git devrait signaler un conflit dans `TRESOR.md` :
+
+```text
+CONFLICT (content): Merge conflict in TRESOR.md
+Automatic merge failed; fix conflicts and then commit the result.
+```
+
+---
+
+## 5 — Résoudre le conflit manuellement — C14
+
+Dans `TRESOR.md`, Git affichera un bloc semblable à celui-ci :
+
+```text
+<<<<<<< HEAD
+CODE = "Haythem-7 + Hassen-7 + Adversaire-9"
+=======
+CODE = "Haythem-7 + Hassen-7 + Gilbert-7"
+>>>>>>> conflit/gilbert
+```
+
+Remplacer tout le bloc de conflit par une ligne qui conserve les deux contributions :
+
+```text
+CODE = "Haythem-7 + Hassen-7 + Adversaire-9 + Gilbert-7"
+```
+
+Ajouter le fichier corrigé et créer le commit de résolution :
+
+```bash
+git add TRESOR.md
+git commit -m "C14 - Résoudre le conflit du code secret"
+```
+
+---
+
+## 6 — Supprimer les branches locales
+
+Une fois les branches fusionnées :
+
+```bash
+git branch -d conflit/adversaire conflit/gilbert
+```
+
+---
+
+## 7 — Vérifier le résultat
+
+```bash
+git status
+git log --graph --oneline --decorate --all
+```
+
+L’historique devrait ressembler à ceci :
+
+```text
+*   C14 - Résoudre le conflit du code secret
+|\
+| * C13 - Inscrire ma part du code secret
+* |   Fusionner la contribution de l'adversaire
+|\ \
+| |/
+|/|
+| * Simule un camarade qui pousse avant moi
+|/
+* Commit précédent de main
+```
+
+---
+
+## Résultat attendu
+
+- Deux branches locales indépendantes
+- Modification concurrente de la même ligne
+- Vrai conflit Git
+- Résolution manuelle
+- Commit **C13** conservé
+- Commit de résolution **C14** conservé
+- Aucun `push` requis avant la résolution
+- Démonstration de la maîtrise des branches et des conflits Git
 </details>
 
 
