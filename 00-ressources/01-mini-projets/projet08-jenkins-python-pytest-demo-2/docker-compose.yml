@@ -1,0 +1,21 @@
+# Lance Jenkins dans Docker pour la démo.
+# - build : utilise notre image personnalisée (jenkins/Dockerfile) avec Python + docker CLI
+# - le socket Docker de l'hôte est monté pour que Jenkins puisse construire des images
+services:
+  jenkins:
+    build:
+      context: .
+      dockerfile: jenkins/Dockerfile
+    image: jenkins-cicd-demo:latest
+    container_name: jenkins-demo
+    restart: unless-stopped
+    ports:
+      - "8080:8080"    # interface web de Jenkins
+      - "50000:50000"  # port des agents (non utilisé ici mais standard)
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      # Permet a Jenkins d'utiliser le Docker de la machine hote (build + push)
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  jenkins_home:

@@ -1,0 +1,90 @@
+// Pipeline Jenkins déclaratif (équivalent du ci-cd.yml de GitHub Actions).
+// Modèle : pipeline -> stages -> steps.
+// Doc : https://www.jenkins.io/doc/book/pipeline/syntax/
+pipeline {
+    // On s'exécute directement sur le contrôleur Jenkins (qui a Python + docker CLI).
+    agent any
+
+    environment {
+        // Nom de l'image (le nom d'utilisateur vient des credentials 'dockerhub').
+        IMAGE_NAME = 'taskapi'
+        // Tag court basé sur le numéro de build Jenkins.
+        IMAGE_TAG = "build-${env.BUILD_NUMBER}"
+    }
+
+    options {
+        // Garde les 10 derniers builds seulement.
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timestamps()
+    }
+
+    stages {
+
+        // -------- CI : préparation de l'environnement Python --------
+        stage('Setup Python') {
+            steps {
+                sh '''
+                    python3 -m venv .venv
+                    . .venv/bin/activate
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
+                '''
+            }
+        }
+
+        // -------- CI : vérification du style --------
+        stage('Lint') {
+            steps {
+                sh '. .venv/bin/activate && ruff check .'
+            }
+        }
+
+        // -------- CI : tests + rapport JUnit --------
+        stage('Test') {
+            steps {
+                sh '''
+                    . .venv/bin/activate
+                    pytest --cov=app --cov-report=term-missing --junitxml=report.xml
+                '''
+            }
+            post {
+                // Publie le rapport de tests dans l'interface Jenkins, même en cas d'échec.
+                always {
+                    junit allowEmptyResults: true, testResults: 'report.xml'
+                }
+            }
+        }
+
+        // -------- CD : build + push Docker Hub (uniquement sur main) --------
+        stage('Build & Push Docker Hub') {
+            when {
+                branch 'main'
+            }
+            steps {
+                // 'dockerhub' = identifiants (username + token) créés dans Jenkins.
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker build -t "$DOCKER_USER/${IMAGE_NAME}:latest" -t "$DOCKER_USER/${IMAGE_NAME}:${IMAGE_TAG}" .
+                        docker push "$DOCKER_USER/${IMAGE_NAME}:latest"
+                        docker push "$DOCKER_USER/${IMAGE_NAME}:${IMAGE_TAG}"
+                        docker logout
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline terminé avec succès.'
+        }
+        failure {
+            echo 'Le pipeline a échoué : rien n\'a été publié.'
+        }
+    }
+}
