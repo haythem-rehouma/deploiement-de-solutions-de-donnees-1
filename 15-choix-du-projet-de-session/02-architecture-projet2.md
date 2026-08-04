@@ -3,7 +3,11 @@
 ## **Target Architecture & Deployment Mission (Big Data Team)**
 
 
+#### Ressources:
 
+- https://github.com/haythem-rehouma/superkubernetex-app.git
+
+- 
 ## **1. Contexte du projet**
 
 Le client vous fournit une application complète composée d’un **frontend**, d’un service d’authentification, d’un module de paiement et de **trois instances applicatives indépendantes** appelées *instance1*, *instance2* et *instance3*. Ces instances représentent trois environnements isolés ayant chacun leur propre base de données, leurs propres fichiers et leur propre logique, mais partageant le même socle technologique. Votre équipe est **l’équipe Big Data**, responsable de toute la **mise en production**, de la **scalabilité**, de la **résilience**, du **monitoring**, et de la **gestion des flux de données**. Le code applicatif (frontend + backend) vous est fourni :
