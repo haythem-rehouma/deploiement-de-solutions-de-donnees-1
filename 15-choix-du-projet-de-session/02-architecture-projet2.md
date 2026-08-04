@@ -1,4 +1,4 @@
-# **Project 2 — SuperKuberneteX**
+# **Sujet 2 — SuperKuberneteX**
 
 ## **Target Architecture & Deployment Mission (Big Data Team)**
 
