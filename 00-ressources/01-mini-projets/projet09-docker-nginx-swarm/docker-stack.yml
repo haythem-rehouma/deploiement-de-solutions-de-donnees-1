@@ -1,0 +1,25 @@
+# MODE SWARM (cluster) : docker stack deploy -c docker-stack.yml demo
+# Prerequis : image demo-web:1.0 deja construite (docker compose build)
+#             et cluster initialise (docker swarm init).
+services:
+  web:
+    image: demo-web:1.0
+    expose:
+      - "5000"
+    deploy:
+      replicas: 3                 # 3 instances reparties par le routing mesh de Swarm
+      restart_policy:
+        condition: on-failure     # auto-reparation si un conteneur plante
+      update_config:
+        parallelism: 1            # mise a jour progressive (1 replique a la fois)
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8088:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - web
+    deploy:
+      replicas: 1
