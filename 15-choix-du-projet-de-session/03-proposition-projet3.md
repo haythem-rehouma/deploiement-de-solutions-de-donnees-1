@@ -1,4 +1,4 @@
-**Sujet : Concevoir une chaîne CI/CD complète pour un projet applicatif libre.**
+# Sujet 3: Concevoir une chaîne CI/CD complète pour un projet applicatif libre
 
 ## 1. Règles générales
 
