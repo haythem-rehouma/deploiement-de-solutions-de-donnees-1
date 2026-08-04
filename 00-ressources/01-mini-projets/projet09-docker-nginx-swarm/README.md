@@ -7,6 +7,8 @@
 > Objectif : lancer une petite **app web** en **plusieurs répliques**, placées derrière **Nginx** (répartiteur de charge), et voir la charge se répartir. Deux modes de déploiement : **`docker compose`** (une machine) et **Docker Swarm** (`stack deploy`, cluster).
 >
 > Pressé ? Voir l'**[aide-mémoire des commandes](COMMANDES.md)**.
+>
+> Pour vous auto-évaluer : **[Quiz ciblé sur le projet (25 questions)](QUIZ.md)**.
 
 > [!IMPORTANT]
 > **Travaillez d'abord seul !** Commencez par l'**[énoncé (ENONCE.md)](ENONCE.md)** et tentez de réaliser le projet par vous-même. Ce README est le **guide + corrigé** : les explications détaillées sont **repliées** plus bas.
