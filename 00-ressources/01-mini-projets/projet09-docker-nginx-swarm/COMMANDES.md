@@ -31,6 +31,7 @@ docker info                 # doit repondre sans erreur (moteur demarre)
 
 ## 2. Démarrer / arrêter (mode Compose)
 
+- La URL à tester dans le navigateur est la suivante : http://localhost:8088/
 ```bash
 # Demarrer avec 3 repliques (construit l'image la 1ere fois)
 docker compose up -d --build --scale web=3
