@@ -9,6 +9,8 @@
 > Pressé ? Voir l'**[aide-mémoire des commandes](COMMANDES.md)**.
 >
 > Pour vous auto-évaluer : **[Quiz ciblé sur le projet (25 questions)](QUIZ.md)**.
+>
+> Pour aller plus loin : **[TP — Enrichir l'application (variables d'environnement, routes, rolling update)](TP-ENRICHIR-LAPP.md)**.
 
 > [!IMPORTANT]
 > **Travaillez d'abord seul !** Commencez par l'**[énoncé (ENONCE.md)](ENONCE.md)** et tentez de réaliser le projet par vous-même. Ce README est le **guide + corrigé** : les explications détaillées sont **repliées** plus bas.
