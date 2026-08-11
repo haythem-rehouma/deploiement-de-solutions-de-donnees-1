@@ -1,0 +1,12 @@
+# ConfigMap = configuration (variables d'environnement) separee du code.
+# On peut changer ces valeurs SANS reconstruire l'image Docker.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-config
+  labels:
+    app: demo-web
+data:
+  APP_TITLE: "Bonjour depuis Kubernetes !"
+  APP_VERSION: "1.0.0"
+  BG_COLOR: "#0f172a"        # couleur de fond de la page : changez-la puis reappliquez !
