@@ -1,0 +1,16 @@
+# LoadBalancer = demande une IP externe a l'infrastructure. Dans le cloud, cela
+# provisionne un vrai load balancer (AWS ELB, GCP LB...). Avec Docker Desktop,
+# l'IP externe devient "localhost" -> http://localhost:8090
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-lb
+  labels:
+    app: demo-back
+spec:
+  type: LoadBalancer
+  selector:
+    app: demo-back
+  ports:
+    - port: 8090             # port expose par le load balancer
+      targetPort: 5000

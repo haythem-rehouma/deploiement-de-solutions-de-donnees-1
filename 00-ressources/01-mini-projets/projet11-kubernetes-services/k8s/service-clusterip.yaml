@@ -1,0 +1,16 @@
+# ClusterIP = type PAR DEFAUT. Adresse IP interne, joignable UNIQUEMENT depuis
+# l'interieur du cluster. C'est la brique de la "decouverte de services" :
+# les autres Pods l'appellent par son NOM DNS -> http://demo-clusterip
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-clusterip
+  labels:
+    app: demo-back
+spec:
+  type: ClusterIP            # (valeur par defaut si on ne precise rien)
+  selector:
+    app: demo-back           # cible les Pods du Deployment
+  ports:
+    - port: 80               # port du Service (interne)
+      targetPort: 5000       # port du conteneur (Flask)

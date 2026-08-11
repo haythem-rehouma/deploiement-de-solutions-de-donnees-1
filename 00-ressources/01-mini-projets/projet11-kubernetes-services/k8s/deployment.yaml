@@ -1,0 +1,35 @@
+# Deployment "backend" : 3 Pods identiques. Les 3 Services ci-apres pointent
+# tous vers ces memes Pods grace au selecteur de labels (app: demo-back).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-back
+  labels:
+    app: demo-back
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: demo-back
+  template:
+    metadata:
+      labels:
+        app: demo-back          # label cible par TOUS les Services
+    spec:
+      containers:
+        - name: web
+          image: demo-k8s:1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+          env:
+            - name: APP_ROLE
+              value: "backend"
+          readinessProbe:
+            httpGet: { path: /health, port: 5000 }
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /health, port: 5000 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
