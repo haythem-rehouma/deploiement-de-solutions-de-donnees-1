@@ -12,6 +12,11 @@
 
 ---
 
+## Architecture
+
+<img width="1032" height="572" alt="image" src="https://github.com/user-attachments/assets/7bad5c38-2a54-4b9f-a0b4-df2349493bc7" />
+
+
 ## Faut-il installer minikube ?
 
 **Non.** Docker Desktop (déjà installé) embarque un **cluster Kubernetes**. On l'active en un clic — aucune installation supplémentaire.
