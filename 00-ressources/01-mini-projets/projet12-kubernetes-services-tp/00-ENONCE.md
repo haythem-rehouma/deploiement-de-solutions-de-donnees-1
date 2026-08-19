@@ -354,6 +354,15 @@ Les 8 liaisons vérifiées :
 
 ## Préparation
 
+### Prérequis — à vérifier une seule fois
+
+1. **Docker Desktop est démarré** (icône verte dans la barre système).
+2. **Kubernetes est activé dans Docker Desktop** : *Settings → Kubernetes → Enable Kubernetes → Apply & Restart*. Sans cette case cochée, aucune commande `kubectl` ne fonctionnera.
+3. **Docker Desktop dispose d'au moins 4 Go de RAM** : *Settings → Resources → Memory ≥ 4 GB*. Ce projet lance 14 Pods ; sur 2 Go la machine s'étouffe et des Pods restent en `Pending`.
+4. **Vous avez Internet** (pour la mission 5 et pour télécharger l'image `busybox`).
+
+### Séquence de mise en route
+
 ```powershell
 # 0) Se placer sur le bon cluster (indispensable si minikube ou kind a déjà servi)
 kubectl config use-context docker-desktop
@@ -368,12 +377,21 @@ docker build -t portail:1.0    ./apps/portail
 kubectl apply -f k8s/01-deployments.yaml
 kubectl apply -f k8s/02-statefulset-bd.yaml
 
-# 3) Constater la situation de départ
-kubectl get pods                        # tout est Running
+# 3) Attendre que TOUS les Pods soient Ready (environ 30 s)
+kubectl wait --for=condition=ready pod --all --timeout=180s
+
+# 4) Constater la situation de départ
+kubectl get pods                        # 14 Pods, tous Running
 kubectl get svc                         # seulement "kubernetes" : aucun de vos Services
 ```
 
 À ce stade : **tous les Pods tournent** et **rien ne communique**. C'est le point de départ normal.
+
+> **Deux avertissements techniques à connaître dès maintenant — ce n'est pas une erreur de votre part** :
+>
+> 1. **Warning `Endpoints is deprecated in v1.33+`** — Kubernetes affiche systématiquement ce message à chaque `kubectl get endpoints`. La commande fonctionne toujours parfaitement, ignorez le warning. La nouvelle API équivalente est `kubectl get endpointslices`, mais toutes les commandes de ce TP utilisent volontairement `endpoints`, plus lisible pour apprendre.
+>
+> 2. **Le tableau de bord peut mettre 10 à 15 secondes à s'afficher la première fois** : le portail teste **8 liaisons réseau** à chaque affichage, chacune avec un délai d'attente de 1,5 s. Quand rien ne fonctionne encore, il attend chaque délai avant d'afficher rouge ou orange. Une fois les Services corrects, le temps de réponse retombe à quelques centaines de millisecondes.
 
 > **Question à vous poser immédiatement :** comment allez-vous seulement *voir* le tableau de bord, puisqu'aucune porte d'entrée n'existe encore ?
 >
@@ -440,13 +458,22 @@ Les Pods de la base portent le label `app: bd` et écoutent sur le port **5432**
 
 **Validation :**
 ```powershell
-kubectl run dns --rm -it --image=busybox:1.36 -- sh
-#   nslookup bd-interne        -> doit renvoyer PLUSIEURS adresses (une par Pod)
-#   nslookup bd-0.bd-interne   -> doit renvoyer UNE seule adresse
-#   exit
+# 1) Depuis un Pod utilitaire, joindre directement bd-0 :
+kubectl run test --rm -i --restart=Never --image=busybox:1.36 -- wget -qO- http://bd-0.bd-interne:5432/ping
+# doit repondre : {"pod":"bd-0","port":5432,"service":"base-de-donnees"}
+
+# 2) Verifier les entrees DNS avec le nom pleinement qualifie
+#    (busybox nslookup n'applique PAS les search domains, il faut donner le FQDN) :
+kubectl run test --rm -i --restart=Never --image=busybox:1.36 -- nslookup bd-0.bd-interne.default.svc.cluster.local
+# doit renvoyer UNE seule adresse (celle du Pod bd-0)
+
+kubectl run test --rm -i --restart=Never --image=busybox:1.36 -- nslookup bd-interne.default.svc.cluster.local
+# doit renvoyer TROIS adresses (une par Pod du StatefulSet)
 ```
 
 > **Piège à ne pas manquer :** examinez le champ `serviceName` du StatefulSet fourni. Le **nom** de votre Service **doit** lui correspondre exactement, sinon les noms individuels des Pods ne seront **jamais** créés.
+>
+> **Piège technique (busybox) :** `nslookup nom-court` ne fonctionne pas depuis un Pod busybox car son résolveur n'utilise pas les *search domains* de `/etc/resolv.conf`. Depuis un vrai Pod applicatif (comme `portail`), en revanche, `bd-0.bd-interne` **résout parfaitement**. Utilisez donc `wget` pour tester la vraie chaîne applicative, et le FQDN pour lever toute ambiguïté DNS.
 
 ---
 
@@ -482,9 +509,11 @@ Le portail doit joindre un service de paiement **hébergé à l'extérieur du cl
 
 **Validation :**
 ```powershell
-kubectl run dns --rm -it --image=busybox:1.36 -- sh
-#   nslookup paiement-externe   -> doit montrer un renvoi (CNAME) vers example.com
-#   exit
+kubectl run test --rm -i --restart=Never --image=busybox:1.36 -- nslookup paiement-externe.default.svc.cluster.local
+# doit afficher :
+#   paiement-externe.default.svc.cluster.local  canonical name = example.com
+#   Name: example.com
+#   Address: <IP publique>
 ```
 
 > Cette mission nécessite que le cluster puisse résoudre les noms publics. Si vous n'avez **aucun accès Internet**, remplacez la cible par `api-produits.default.svc.cluster.local` et signalez-le dans votre rapport.
@@ -533,6 +562,17 @@ Un script vous donne votre score **à tout moment** :
 ```powershell
 .\outils\valider.ps1
 ```
+
+> **Si PowerShell refuse d'exécuter le script** avec un message du type `l'exécution de scripts est désactivée sur ce système`, contournez la restriction pour cette seule commande :
+>
+> ```powershell
+> powershell -ExecutionPolicy Bypass -File .\outils\valider.ps1
+> ```
+>
+> Autre solution durable (à ne faire qu'une fois pour votre utilisateur) :
+> ```powershell
+> Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+> ```
 
 ```
 [OK]     Mission 1 - api-produits ............. 15/15
@@ -616,10 +656,20 @@ kubectl get endpoints <nom>                  # QUI se trouve derrière le Servic
 kubectl get pods --show-labels               # les labels réels des Pods
 kubectl get pods -l app=<valeur>             # tester un sélecteur
 kubectl port-forward deploy/portail 5000:5000    # accéder à un Pod SANS Service
-kubectl run test --rm -it --image=busybox:1.36 -- sh    # puis nslookup / wget
+kubectl run test --rm -i --restart=Never --image=busybox:1.36 -- wget -qO- http://<nom>/ping
+kubectl run test --rm -i --restart=Never --image=busybox:1.36 -- nslookup <nom>.default.svc.cluster.local
 kubectl logs -l app=portail --tail=30        # ce que le portail n'arrive pas à joindre
 kubectl delete svc <nom>                     # repartir de zéro sur un Service
 ```
+
+> **Piège à connaître avec `kubectl run test` :** si vous enchaînez plusieurs commandes rapidement, le Pod précédent n'est pas toujours supprimé à temps et vous obtiendrez :
+> ```
+> Error from server (AlreadyExists): pods "test" already exists
+> ```
+> **Deux solutions :** changer le nom (`test1`, `test2`…) à chaque commande, ou nettoyer avant :
+> ```powershell
+> kubectl delete pod test --ignore-not-found; kubectl run test --rm -i --restart=Never ...
+> ```
 
 **Les trois questions qui débloquent 90 % des situations :**
 
