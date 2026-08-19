@@ -1,0 +1,372 @@
+STATEFULSET ET SERVICE HEADLESS — EXPLICATION TRÈS SIMPLE
+
+Objectif
+========
+
+Comprendre pourquoi on utilise souvent un StatefulSet avec un Service headless
+pour des applications avec état, par exemple une base de données.
+
+--------------------------------------------------
+1. D'ABORD : LE DEPLOYMENT
+--------------------------------------------------
+
+Imaginez que vous avez un site web avec 3 copies :
+
+web-abc123-x7k9
+web-abc123-p2m1
+web-abc123-z8t4
+
+Pour Kubernetes, ces Pods sont interchangeables.
+
+Autrement dit :
+
+Pod 1 = copie du site
+Pod 2 = copie du site
+Pod 3 = copie du site
+
+Peu importe lequel répond à l'utilisateur.
+
+Si un Pod tombe en panne, Kubernetes peut en recréer un autre
+avec un autre nom.
+
+Exemple :
+
+web-abc123-x7k9
+        ↓
+      panne
+        ↓
+web-abc123-k9m4
+
+Ce n'est pas grave, car le site web n'a pas besoin de reconnaître
+un Pod précis.
+
+À retenir :
+
+Deployment = plusieurs copies interchangeables d'une application.
+
+C'est très pratique pour :
+
+- un site web ;
+- une API ;
+- un frontend ;
+- une application FastAPI ;
+- une application sans état.
+
+--------------------------------------------------
+2. LE PROBLÈME AVEC UNE BASE DE DONNÉES
+--------------------------------------------------
+
+Pour une base de données, on peut avoir besoin de distinguer les instances.
+
+Exemple :
+
+bd-0 = base principale
+bd-1 = copie de la base
+bd-2 = copie de la base
+
+Ici, chaque Pod a un rôle précis.
+
+On veut donc conserver des noms stables :
+
+bd-0
+bd-1
+bd-2
+
+Si bd-0 redémarre, on veut qu'il revienne avec le même nom :
+
+bd-0
+  ↓
+panne
+  ↓
+redémarrage
+  ↓
+bd-0
+
+C'est le rôle du StatefulSet.
+
+À retenir :
+
+StatefulSet = donne une identité stable aux Pods.
+
+--------------------------------------------------
+3. EXEMPLE DE STATEFULSET
+--------------------------------------------------
+
+Exemple simplifié :
+
+kind: StatefulSet
+
+spec:
+  serviceName: bd-interne
+  replicas: 3
+
+Kubernetes crée alors :
+
+bd-0
+bd-1
+bd-2
+
+Le champ :
+
+serviceName: bd-interne
+
+indique que le StatefulSet est associé à un Service nommé :
+
+bd-interne
+
+--------------------------------------------------
+4. MAIS COMMENT CONTACTER PRÉCISÉMENT bd-0 ?
+--------------------------------------------------
+
+Supposons que votre application doit contacter uniquement la base principale :
+
+bd-0
+
+Elle doit pouvoir dire :
+
+"Je veux parler exactement à bd-0."
+
+C'est là que le Service headless devient utile.
+
+--------------------------------------------------
+5. LE SERVICE HEADLESS
+--------------------------------------------------
+
+Un Service Kubernetes normal donne généralement une adresse commune
+pour accéder à plusieurs Pods.
+
+Exemple :
+
+Service
+   ↓
+bd-0
+bd-1
+bd-2
+
+Le client demande simplement :
+
+bd-interne
+
+et Kubernetes choisit un backend approprié.
+
+Mais parfois, on veut pouvoir choisir un Pod précis.
+
+Par exemple :
+
+bd-0 uniquement
+
+ou :
+
+bd-1 uniquement
+
+On utilise alors un Service headless.
+
+Exemple :
+
+spec:
+  clusterIP: None
+
+Le mot important est :
+
+None
+
+Il signifie ici que Kubernetes ne crée pas une adresse ClusterIP unique
+devant les Pods.
+
+--------------------------------------------------
+6. CE QUE LE SERVICE HEADLESS PERMET
+--------------------------------------------------
+
+Avec le StatefulSet + le Service headless,
+chaque Pod peut être retrouvé avec un nom DNS stable.
+
+Exemple :
+
+bd-0.bd-interne
+        ↓
+      bd-0
+
+bd-1.bd-interne
+        ↓
+      bd-1
+
+bd-2.bd-interne
+        ↓
+      bd-2
+
+Ainsi, si l'application veut parler seulement à la base principale :
+
+bd-0.bd-interne
+
+Si elle veut parler à la première copie :
+
+bd-1.bd-interne
+
+--------------------------------------------------
+7. IMAGE MENTALE À RETENIR
+--------------------------------------------------
+
+STATEFULSET
+===========
+
+Il crée des Pods avec des noms fixes :
+
+bd-0
+bd-1
+bd-2
+
+
+SERVICE HEADLESS
+================
+
+Il permet de retrouver chaque Pod individuellement :
+
+bd-0.bd-interne
+bd-1.bd-interne
+bd-2.bd-interne
+
+
+ENSEMBLE
+========
+
+StatefulSet
+   ↓
+bd-0
+bd-1
+bd-2
+   ↓
+Service headless : bd-interne
+   ↓
+Noms DNS individuels
+
+--------------------------------------------------
+8. EXEMPLE COMPLET
+--------------------------------------------------
+
+StatefulSet :
+
+kind: StatefulSet
+spec:
+  serviceName: bd-interne
+  replicas: 3
+
+
+Service :
+
+kind: Service
+metadata:
+  name: bd-interne
+
+spec:
+  clusterIP: None
+
+
+Résultat conceptuel :
+
+bd-0.bd-interne  → bd-0
+bd-1.bd-interne  → bd-1
+bd-2.bd-interne  → bd-2
+
+--------------------------------------------------
+9. EXEMPLE CONCRET : BASE DE DONNÉES
+--------------------------------------------------
+
+Imaginez :
+
+bd-0 = base principale
+bd-1 = réplica
+bd-2 = réplica
+
+Une application qui doit écrire dans la base principale
+peut être configurée pour utiliser :
+
+bd-0.bd-interne
+
+Une application de lecture pourrait éventuellement utiliser
+une autre instance selon l'architecture choisie.
+
+L'idée importante est que Kubernetes peut identifier chaque Pod
+de manière stable.
+
+--------------------------------------------------
+10. DIFFÉRENCE FINALE
+--------------------------------------------------
+
+DEPLOYMENT
+----------
+
+web-abc123-x7k9
+web-abc123-p2m1
+web-abc123-z8t4
+
+Les Pods sont interchangeables.
+
+On se fiche généralement du Pod précis.
+
+
+STATEFULSET
+-----------
+
+bd-0
+bd-1
+bd-2
+
+Les Pods ont une identité stable.
+
+On peut avoir besoin de contacter un Pod précis.
+
+
+SERVICE HEADLESS
+----------------
+
+Permet de retrouver chaque Pod du StatefulSet avec un nom DNS individuel.
+
+Exemple :
+
+bd-0.bd-interne
+bd-1.bd-interne
+bd-2.bd-interne
+
+--------------------------------------------------
+11. PHRASE À RETENIR
+--------------------------------------------------
+
+Deployment = copies interchangeables.
+
+StatefulSet = Pods avec des noms et une identité stables.
+
+Service headless = permet de retrouver individuellement
+les Pods du StatefulSet par DNS.
+
+--------------------------------------------------
+12. RÉSUMÉ EN UNE IMAGE
+--------------------------------------------------
+
+Site web :
+
+Deployment
+   ↓
+Pod quelconque
+Pod quelconque
+Pod quelconque
+
+Peu importe lequel répond.
+
+
+Base de données :
+
+StatefulSet
+   ↓
+bd-0  = primaire
+bd-1  = réplica
+bd-2  = réplica
+   ↓
+Service headless
+   ↓
+bd-0.bd-interne
+bd-1.bd-interne
+bd-2.bd-interne
+
+C'est cette capacité à conserver une identité stable
+et à joindre un Pod précis qui rend le StatefulSet
+adapté aux applications avec état.
