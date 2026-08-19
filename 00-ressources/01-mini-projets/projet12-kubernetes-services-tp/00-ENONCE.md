@@ -11,6 +11,7 @@
 ## Table des matières
 
 - [Le contexte](#le-contexte)
+- [Concepts essentiels avant de commencer](#concepts-essentiels-avant-de-commencer)
 - [L'architecture à mettre en service](#larchitecture-a-mettre-en-service)
 - [Disposition des fichiers](#disposition-des-fichiers)
 - [Le tableau de bord : votre indicateur de progression](#le-tableau-de-bord--votre-indicateur-de-progression)
@@ -52,6 +53,185 @@ flowchart LR
 > **Rappel fondamental que ce projet va vous faire vivre :** des Pods qui tournent ne constituent **pas** une application. Sans Services, ce sont des îlots isolés, sans adresse stable ni nom, incapables de se trouver les uns les autres.
 
 **Votre mission :** rétablir toutes les communications, **uniquement** en écrivant les bons Services.
+
+---
+
+## Concepts essentiels avant de commencer
+
+> Cette section est un **mini-manuel autosuffisant** : elle contient tout le vocabulaire nécessaire aux missions. Lisez-la une fois, revenez-y quand un mot vous échappe.
+
+### 1. Le problème que résout un Service
+
+Un **Pod** est mortel : Kubernetes peut le supprimer, le déplacer, le recréer — et sa **nouvelle IP sera différente**. On ne se connecte donc jamais à un Pod par son IP.
+
+Un **Service** est un objet stable — nom, IP, port — qui **suit** les Pods où qu'ils aillent. Le mécanisme est simple :
+
+```mermaid
+flowchart LR
+    client["Client (autre Pod)"] -->|http://api-produits| dns["DNS interne du cluster<br/>(CoreDNS)"]
+    dns -->|10.96.24.7| svc["Service api-produits<br/>(IP virtuelle stable)"]
+    svc -->|IP réelle du moment| p1["Pod A<br/>10.244.0.3"]
+    svc -->|IP réelle du moment| p2["Pod B<br/>10.244.0.4"]
+    svc -->|IP réelle du moment| p3["Pod C<br/>10.244.0.5"]
+```
+
+Ce qui fait le lien entre un Service et « ses » Pods, c'est le **sélecteur de labels** :
+
+```yaml
+spec:
+  selector:
+    app: api-produits          # tout Pod portant CE label est atteint
+```
+
+La liste des Pods qui correspondent forme l'objet **Endpoints** — c'est votre **radiographie** du Service.
+
+```powershell
+kubectl get endpoints api-produits
+# api-produits   10.244.0.3:8000,10.244.0.4:8000,10.244.0.5:8000
+```
+
+Si `Endpoints` est **vide**, le sélecteur ne correspond à **aucun Pod** : c'est presque toujours une faute de frappe dans un label.
+
+---
+
+### 2. Les cinq types de Services (les seuls dont vous avez besoin)
+
+| Type | À quoi ça sert | Vu de l'extérieur ? | Dans ce projet |
+|---|---|---|---|
+| **ClusterIP** | Adresse **interne** au cluster, valeur par défaut | Non | api-produits, api-commandes, cache, notifications, metriques |
+| **NodePort** | Ouvre un port fixe (30000–32767) sur **chaque nœud** | Oui, `localhost:<nodePort>` | portail |
+| **LoadBalancer** | Demande une IP publique au cloud (AWS, GCP, Azure) | Oui | (mission bonus) |
+| **Headless** | Un ClusterIP **sans** IP virtuelle : renvoie **la liste** des IP des Pods, plus un **nom DNS par Pod** | Non | bd-interne |
+| **ExternalName** | **Alias DNS** vers un nom externe. Aucun Pod, aucun sélecteur. | Non | paiement-externe |
+
+**Point important :** un Service qui « ne fonctionne pas » n'est presque jamais un problème de type. C'est presque toujours **sélecteur** ou **port**.
+
+---
+
+### 3. DNS interne : les règles qui donnent l'illusion de magie
+
+Dans le cluster, **CoreDNS** fabrique automatiquement des noms selon des règles fixes :
+
+| Vous appelez | CoreDNS résout vers |
+|---|---|
+| `api-produits` | le Service `api-produits` du **même namespace** |
+| `api-produits.default` | le Service `api-produits` du namespace `default` |
+| `api-produits.default.svc.cluster.local` | forme longue et pleinement qualifiée |
+
+**Corollaire capital** : le **nom du Service** est le nom que l'application appelle. Un Service nommé `notification` ne répond **pas** à `http://notifications`. Ce piège est au cœur de la mission 6.
+
+---
+
+### 4. StatefulSet et Service headless : le tandem
+
+Un **Deployment** traite ses répliques comme des jumelles interchangeables (`web-abc123-x7k9`, `web-abc123-p2m1`…). Parfait pour du web sans état.
+
+Un **StatefulSet** produit au contraire des Pods **numérotés et stables** : `bd-0`, `bd-1`, `bd-2`. Chaque Pod garde son **identité** à travers les redémarrages — indispensable pour une base de données où l'on doit désigner **précisément la primaire**.
+
+Mais un StatefulSet **ne suffit pas seul** : il exige d'être **associé à un Service headless** dont il indique le nom dans son champ `serviceName`.
+
+```yaml
+kind: StatefulSet
+spec:
+  serviceName: bd-interne         # <-- pointe vers un Service headless du même nom
+  replicas: 3
+```
+
+Ce Service headless donne alors **un nom DNS par Pod** :
+
+```
+bd-0.bd-interne         -> IP du Pod bd-0 UNIQUEMENT
+bd-1.bd-interne         -> IP du Pod bd-1 UNIQUEMENT
+bd-interne              -> IPs des trois Pods (liste)
+```
+
+Sans le mot `None` dans `spec.clusterIP`, aucun de ces noms n'existe.
+
+```yaml
+spec:
+  clusterIP: None                  # transforme le Service en "headless"
+```
+
+**Retenez ceci :** pour joindre `bd-0.bd-interne`, il faut deux conditions **simultanées** — un StatefulSet dont `serviceName: bd-interne`, et un Service **headless** nommé `bd-interne`. Si l'une manque, le nom individuel **n'existe pas**.
+
+---
+
+### 5. Ports nommés et Services multi-ports
+
+Quand un Service expose **plusieurs ports**, chaque entrée devient obligatoirement **nommée** :
+
+```yaml
+ports:
+  - name: web
+    port: 80
+    targetPort: 8080
+  - name: prom
+    port: 9090
+    targetPort: 9090
+```
+
+Le nom sert au moins à deux choses :
+1. **Kubernetes le refuse sans nom** dès qu'il y a plusieurs entrées ;
+2. Il permet de référencer un port du conteneur **par son nom** plutôt que par son numéro :
+
+```yaml
+ports:
+  - name: web
+    port: 80
+    targetPort: web              # renvoie au containerPort nommé "web"
+```
+
+Avantage concret : si demain le conteneur passe de 8080 à 8081, on modifie **un seul** endroit (le Pod). Le Service reste juste.
+
+---
+
+### 6. ExternalName : un alias DNS, rien de plus
+
+Le type `ExternalName` **ne route rien**. Il demande simplement à CoreDNS de répondre :
+
+> « Le nom `paiement-externe`, c'est **example.com**. »
+
+Un `ExternalName` **n'a jamais** de sélecteur, de Pods ou de ports. Ce n'est **pas** un proxy : c'est un alias.
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: paiement-externe
+spec:
+  type: ExternalName
+  externalName: example.com
+```
+
+Utilité : votre code garde le même nom interne (`paiement-externe`) qu'il s'agisse d'un service dans le cluster, d'un service SaaS externe, ou d'un déménagement d'API. On change **le Service**, pas **le code**.
+
+---
+
+### 7. Les trois questions qui débloquent 90 % des pannes
+
+Chaque fois qu'un Service ne fonctionne pas, posez ces trois questions **dans cet ordre** :
+
+```mermaid
+flowchart TD
+    A["Le nom DNS existe-t-il ?<br/>(kubectl get svc)"] -->|Non| A1["Écrire le Service, ou<br/>corriger son nom"]
+    A -->|Oui| B["Endpoints remplis ?<br/>(kubectl get endpoints)"]
+    B -->|Non| B1["Le sélecteur ne matche aucun Pod<br/>(labels)"]
+    B -->|Oui| C["targetPort = port réellement écouté ?<br/>(kubectl describe svc + Deployment)"]
+    C -->|Non| C1["Aligner le targetPort<br/>sur le containerPort"]
+    C -->|Oui| D["Ça fonctionne — vérifiez le nom<br/>appelé par l'application"]
+```
+
+C'est exactement la méthode de la mission 6.
+
+---
+
+### Ce que vous saurez faire à la fin
+
+- Distinguer les cinq types de Services **et savoir quand utiliser chacun**.
+- Utiliser `kubectl get svc`, `kubectl describe svc`, `kubectl get endpoints` comme trois outils **complémentaires**.
+- Coupler correctement un **StatefulSet** avec un **Service headless**.
+- Écrire un Service **multi-port** propre, avec `targetPort` référencé par nom.
+- Diagnostiquer les trois pannes les plus fréquentes en entreprise (label erroné, port erroné, nom erroné).
 
 ---
 
