@@ -2,9 +2,32 @@
 
 # Mission : rétablir les communications du cluster
 
-> **Projet 12** · Module [07 — Kubernetes : concepts de base](../README.md) · Niveau **intermédiaire → avancé** · Durée estimée : **3 à 5 h**
+> **Projet 12 — Les Services Kubernetes** · Niveau **intermédiaire → avancé** · Durée estimée : **3 à 5 h**
 >
-> **Projet d'application intégrateur sur les Services Kubernetes.** Tout le code applicatif vous est **fourni**. Votre travail : **écrire, déterminer et compléter les Services** qui manquent — c'est-à-dire faire communiquer un système qui, en l'état, est **totalement muet**.
+> Tout le code applicatif vous est **fourni en annexe de ce document**. Votre travail : **écrire, déterminer et compléter les Services** qui manquent — c'est-à-dire faire communiquer un système qui, en l'état, est **totalement muet**.
+
+---
+
+## Table des matières
+
+- [Le contexte](#le-contexte)
+- [L'architecture à mettre en service](#larchitecture-a-mettre-en-service)
+- [Disposition des fichiers](#disposition-des-fichiers)
+- [Le tableau de bord : votre indicateur de progression](#le-tableau-de-bord--votre-indicateur-de-progression)
+- [Les règles du jeu](#les-regles-du-jeu)
+- [Préparation](#preparation)
+- [Les missions](#les-missions)
+- [Validation automatique](#validation-automatique)
+- [Livrables](#livrables)
+- [Questions de réflexion](#questions-de-reflexion)
+- [Barème](#bareme)
+- [Critères de réussite](#criteres-de-reussite)
+- [Boîte à outils](#boite-a-outils)
+- [ANNEXE A — Les applications](#annexe-a--les-applications)
+- [ANNEXE B — Les manifestes fournis](#annexe-b--les-manifestes-fournis)
+- [ANNEXE C — Les squelettes de Services à compléter](#annexe-c--les-squelettes-de-services-a-completer)
+- [ANNEXE D — Les trois Services défectueux](#annexe-d--les-trois-services-defectueux)
+- [ANNEXE E — Le script de validation](#annexe-e--le-script-de-validation)
 
 ---
 
@@ -23,87 +46,162 @@ flowchart LR
     nav["Navigateur"] -.pas de porte d'entrée.-x portail["Pods portail"]
     portail -.pas de nom DNS.-x api["Pods api-produits"]
     portail -.???.-x cache["Pod cache"]
-    api -.???.-x bd["Pods base de données"]
+    portail -.???.-x bd["Pods base de données"]
 ```
 
-> **Rappel fondamental que ce projet va vous faire vivre :** des Pods qui tournent ne constituent **pas** une application. Sans Services, ils sont des îlots isolés, sans adresse stable ni nom, incapables de se trouver les uns les autres.
+> **Rappel fondamental que ce projet va vous faire vivre :** des Pods qui tournent ne constituent **pas** une application. Sans Services, ce sont des îlots isolés, sans adresse stable ni nom, incapables de se trouver les uns les autres.
 
 **Votre mission :** rétablir toutes les communications, **uniquement** en écrivant les bons Services.
 
 ---
 
-## Ce qui vous est fourni
+## L'architecture à mettre en service
+
+Sept composants tournent déjà. Aucun n'est joignable.
+
+```mermaid
+flowchart TB
+    nav["Navigateur<br/>localhost:30500"] -->|Service à écrire| p["portail (5000)"]
+    p -->|Service à écrire| ap["api-produits (8000)"]
+    p -->|Service à réparer| ac["api-commandes (8000)"]
+    p -->|Service à réparer| c["cache (6379)"]
+    p -->|Service à réparer| n["notifications (7000)"]
+    p -->|Service à écrire| m["metriques (8080 + 9090)"]
+    p -->|Service à écrire| bd["bd-0, bd-1, bd-2 (5432)"]
+    p -->|Service à écrire| pe["paiement-externe → example.com"]
+```
+
+| Composant | Port(s) du conteneur | Label des Pods | Contrôleur |
+|---|---|---|---|
+| `portail` | 5000 | `app: portail` | Deployment (1 réplique) |
+| `api-produits` | 8000 | `app: api-produits` | Deployment (3 répliques) |
+| `api-commandes` | 8000 | `app: api-commandes` | Deployment (2 répliques) |
+| `cache` | 6379 | `app: cache` | Deployment (1 réplique) |
+| `notifications` | 7000 | `app: notifications` | Deployment (2 répliques) |
+| `metriques` | 8080 (nommé `web`) et 9090 (nommé `prom`) | `app: metriques` | Deployment (2 répliques) |
+| `bd` | 5432 | `app: bd` | StatefulSet (3 répliques) |
+
+---
+
+## Disposition des fichiers
+
+**Créez exactement cette arborescence**, en recopiant le contenu des annexes. Chaque annexe indique le **chemin exact** du fichier à créer.
 
 ```
 projet12-mission-services/
-├── apps/                          # LE CODE — ne pas modifier
-│   ├── portail/                   # tableau de bord (affiche l'état de chaque liaison)
-│   ├── api-produits/
-│   ├── api-commandes/
-│   └── metriques/                 # expose 2 ports : web + métriques
+├── 00-ENONCE.md                      <- ce document
+│
+├── apps/                             <- LE CODE (ANNEXE A) — NE PAS MODIFIER
+│   ├── micro/
+│   │   ├── app.py
+│   │   ├── requirements.txt
+│   │   └── Dockerfile
+│   ├── metriques/
+│   │   ├── app.py
+│   │   ├── requirements.txt
+│   │   └── Dockerfile
+│   └── portail/
+│       ├── app.py
+│       ├── requirements.txt
+│       └── Dockerfile
+│
 ├── k8s/
-│   ├── 01-deployments.yaml        # FOURNI et COMPLET — ne pas modifier
-│   ├── 02-statefulset-bd.yaml     # FOURNI et COMPLET — ne pas modifier
-│   └── services/                  # À VOUS DE JOUER
-│       ├── README-TODO.md         # la liste des Services attendus
-│       ├── 01-api-produits.yaml   # squelette à compléter (TODO)
-│       ├── 02-portail.yaml        # squelette à compléter (TODO)
-│       ├── 03-bd-headless.yaml    # squelette à compléter (TODO)
-│       ├── 04-metriques.yaml      # squelette à compléter (TODO)
-│       ├── 05-api-externe.yaml    # squelette à compléter (TODO)
-│       └── 06-casses/             # 3 Services FOURNIS mais DÉFECTUEUX (à réparer)
+│   ├── 01-deployments.yaml           <- FOURNI (ANNEXE B) — NE PAS MODIFIER
+│   ├── 02-statefulset-bd.yaml        <- FOURNI (ANNEXE B) — NE PAS MODIFIER
+│   │
+│   └── services/                     <- À VOUS DE JOUER
+│       ├── 01-api-produits.yaml      <- squelette à compléter (ANNEXE C)
+│       ├── 02-portail.yaml           <- squelette à compléter (ANNEXE C)
+│       ├── 03-bd-interne.yaml        <- squelette à compléter (ANNEXE C)
+│       ├── 04-metriques.yaml         <- squelette à compléter (ANNEXE C)
+│       ├── 05-paiement-externe.yaml  <- squelette à compléter (ANNEXE C)
+│       │
+│       └── 06-casses/                <- FOURNIS mais DÉFECTUEUX (ANNEXE D)
+│           ├── casse-1.yaml
+│           ├── casse-2.yaml
+│           └── casse-3.yaml
+│
 ├── outils/
-│   └── valider.ps1                # script de validation automatique (donne un score)
-└── 00-ENONCE.md                   # ce document
+│   └── valider.ps1                   <- FOURNI (ANNEXE E)
+│
+└── RAPPORT.md                        <- À RÉDIGER par vous
 ```
 
-### Le tableau de bord : votre indicateur de progression
+**Trois images seulement** sont nécessaires : `micro:1.0` sert à cinq composants différents (le comportement change par **variables d'environnement**), `metriques:1.0` expose deux ports, et `portail:1.0` affiche le tableau de bord.
 
-Le portail interroge en continu chaque composant et affiche une **tuile par liaison** :
+---
 
-| Tuile | Signification |
-|---|---|
-| 🔴 **Rouge** | Aucune résolution DNS : le Service **n'existe pas** |
-| 🟠 **Orange** | Le nom est résolu, mais **aucun Pod ne répond** : Service créé, mais **sélecteur ou port erroné** |
-| 🟢 **Vert** | Communication établie : **votre Service est correct** |
+## Le tableau de bord : votre indicateur de progression
 
-**Objectif final : sept tuiles vertes.** Chaque Service correctement écrit fait basculer une tuile — vous voyez votre progression **en direct**, sans attendre une correction.
+Le portail interroge en continu chaque composant et affiche une **tuile par liaison**, rafraîchie toutes les 3 secondes :
+
+| Tuile | Signification | Où chercher l'erreur |
+|---|---|---|
+| **ROUGE** | Le nom DNS n'existe pas | Le Service **n'a pas été créé**, ou son **nom** est erroné |
+| **ORANGE** | Le nom est résolu, mais personne ne répond | Le Service existe, mais son **sélecteur** ou son **port** est erroné |
+| **VERT** | Communication établie | **Votre Service est correct** |
+
+**Objectif final : les 8 tuiles au vert**, et le compteur qui affiche `8 / 8`.
+
+> Cette distinction rouge/orange n'est pas décorative : elle vous dit **de quel côté chercher**. Rouge = le Service n'existe pas (rien à déboguer, il faut l'écrire). Orange = le Service existe mais **ne trouve pas ses Pods** ou **tape sur le mauvais port**.
+
+Les 8 liaisons vérifiées :
+
+| # | Tuile | Ce que le portail teste |
+|---|---|---|
+| 1 | Accès externe | Que vous consultez bien le portail via le port **30500** |
+| 2 | API Produits | `http://api-produits/ping` |
+| 3 | Base de données | `http://bd-0.bd-interne:5432/ping` |
+| 4 | Métriques | `http://metriques/ping` **et** `http://metriques:9090/metrics` |
+| 5 | Paiement externe | Résolution DNS du nom `paiement-externe` |
+| 6 | API Commandes | `http://api-commandes/ping` |
+| 7 | Cache | `http://cache/ping` |
+| 8 | Notifications | `http://notifications/ping` |
 
 ---
 
 ## Les règles du jeu
 
-1. **Interdiction absolue de modifier** `apps/`, `01-deployments.yaml` et `02-statefulset-bd.yaml`.
+1. **Interdiction absolue de modifier** le dossier `apps/`, ainsi que `01-deployments.yaml` et `02-statefulset-bd.yaml`.
    *(Toute la difficulté consiste à s'adapter à l'existant : c'est exactement la situation d'un vrai poste de travail.)*
-2. Vous ne créez et ne modifiez **que** des fichiers dans `k8s/services/`.
-3. **Aucune IP en dur.** Tout doit reposer sur les **noms DNS** et les **sélecteurs de labels**.
-4. Vous devez **déterminer vous-même le type** de chaque Service : rien ne vous dit si c'est un `ClusterIP`, un `NodePort`, un `LoadBalancer`, un **headless** ou un `ExternalName`. C'est **le cœur de l'évaluation**.
-5. Les **noms** de Services sont **imposés** (le code applicatif les utilise) : ils figurent dans le tableau des missions ci-dessous. Un nom erroné = tuile rouge.
-6. Vous travaillez sur le **Kubernetes de Docker Desktop** (voir le [projet 10](../projet10-kubernetes-deploiements/00-ENONCE.md) pour l'activer).
+2. Vous ne créez et ne modifiez **que** des fichiers situés dans `k8s/services/`.
+3. **Aucune adresse IP en dur.** Tout doit reposer sur les **noms DNS** et les **sélecteurs de labels**.
+4. Vous devez **déterminer vous-même le type** de chaque Service : rien ne vous dit s'il s'agit d'un `ClusterIP`, d'un `NodePort`, d'un `LoadBalancer`, d'un service **headless** ou d'un `ExternalName`. C'est **le cœur de l'évaluation**.
+5. Les **noms** des Services sont **imposés** : le code applicatif les appelle tels quels. Un nom erroné donne une tuile rouge.
+6. Vous travaillez sur le **Kubernetes intégré à Docker Desktop** (Settings → Kubernetes → Enable Kubernetes).
 
 ---
 
 ## Préparation
 
 ```powershell
-kubectl config use-context docker-desktop   # indispensable si minikube a déjà servi
-kubectl get nodes                            # docker-desktop  Ready
+# 0) Se placer sur le bon cluster (indispensable si minikube ou kind a déjà servi)
+kubectl config use-context docker-desktop
+kubectl get nodes                       # doit afficher docker-desktop   Ready
 
-# Construire les images des 4 applications
-docker build -t portail:1.0        ./apps/portail
-docker build -t api-produits:1.0   ./apps/api-produits
-docker build -t api-commandes:1.0  ./apps/api-commandes
-docker build -t metriques:1.0      ./apps/metriques
+# 1) Construire les trois images
+docker build -t micro:1.0      ./apps/micro
+docker build -t metriques:1.0  ./apps/metriques
+docker build -t portail:1.0    ./apps/portail
 
-# Déployer la base fournie (Pods uniquement, aucun Service)
+# 2) Déployer la base fournie (des Pods, et AUCUN Service)
 kubectl apply -f k8s/01-deployments.yaml
 kubectl apply -f k8s/02-statefulset-bd.yaml
-kubectl get pods
+
+# 3) Constater la situation de départ
+kubectl get pods                        # tout est Running
+kubectl get svc                         # seulement "kubernetes" : aucun de vos Services
 ```
 
-À ce stade : **tous les Pods tournent**, et **rien ne communique**. C'est le point de départ normal.
+À ce stade : **tous les Pods tournent** et **rien ne communique**. C'est le point de départ normal.
 
-> **Question à vous poser immédiatement :** comment allez-vous seulement *voir* le tableau de bord, puisqu'aucune porte d'entrée n'existe encore ? *(Indice : `kubectl port-forward` fonctionne même sans Service, directement sur un Pod. C'est votre bouée de secours pour observer votre progression avant d'avoir écrit le Service du portail.)*
+> **Question à vous poser immédiatement :** comment allez-vous seulement *voir* le tableau de bord, puisqu'aucune porte d'entrée n'existe encore ?
+>
+> **Bouée de secours :** `kubectl port-forward` fonctionne **sans aucun Service**, directement sur un Pod.
+> ```powershell
+> kubectl port-forward deploy/portail 5000:5000
+> ```
+> Puis ouvrez `http://localhost:5000`. Vous verrez le tableau de bord **tout rouge**, avec la tuile « Accès externe » en orange (normal : vous n'êtes pas passé par le port 30500).
 
 ---
 
@@ -111,16 +209,17 @@ kubectl get pods
 
 ### Mission 1 — Faire parler le portail à l'API produits *(15 points)*
 
-Le portail appelle `http://api-produits` (port **80**). Les Pods de l'API écoutent sur le port **8000** et portent le label `app: api-produits`.
+Le portail appelle `http://api-produits` sur le port **80**. Les Pods de l'API écoutent sur le port **8000** et portent le label `app: api-produits`.
 
-**À produire :** `k8s/services/01-api-produits.yaml`
+**Fichier à compléter :** `k8s/services/01-api-produits.yaml`
 
-**À déterminer :** le type de Service, le sélecteur, `port` et `targetPort`.
+**À déterminer :** le **type** de Service, le **sélecteur**, ainsi que `port` et `targetPort`.
 
 **Validation :**
 ```powershell
+kubectl apply -f k8s/services/01-api-produits.yaml
 kubectl get svc api-produits
-kubectl get endpoints api-produits      # doit lister les IP des Pods
+kubectl get endpoints api-produits        # doit lister 3 adresses IP
 ```
 La tuile **API Produits** passe au vert.
 
@@ -128,25 +227,26 @@ La tuile **API Produits** passe au vert.
 
 ### Mission 2 — Ouvrir la porte d'entrée *(15 points)*
 
-Le tableau de bord doit être accessible **depuis votre navigateur**, à l'adresse **`http://localhost:30500`**. Les Pods du portail écoutent sur le port **5000**.
+Le tableau de bord doit être accessible **depuis votre navigateur** à l'adresse exacte **`http://localhost:30500`**. Les Pods du portail écoutent sur le port **5000**.
 
-**À produire :** `k8s/services/02-portail.yaml`
+**Fichier à compléter :** `k8s/services/02-portail.yaml`
 
-**À déterminer :** quel type expose un service **à l'extérieur** du cluster sur un port fixe de la machine ? Quelle est la **plage autorisée** pour ce port ?
+**À déterminer :** quel type de Service expose une application **à l'extérieur du cluster** sur un port fixe de la machine ? Quelle est la **plage de ports autorisée** pour ce champ ?
 
 **Validation :**
 ```powershell
-kubectl get svc portail                  # la colonne PORT(S) doit montrer 80:30500/TCP
+kubectl get svc portail                   # PORT(S) doit afficher 80:30500/TCP
 start http://localhost:30500
 ```
+La tuile **Accès externe** passe au vert.
 
-> **Question à traiter dans le rapport :** un autre type de Service aurait aussi rendu le portail accessible depuis le navigateur sur Docker Desktop. Lequel, et quelle différence en **production** dans le cloud ?
+> **Question à traiter dans le rapport :** un autre type de Service aurait lui aussi rendu le portail accessible depuis le navigateur sur Docker Desktop. Lequel ? Et quelle différence cela ferait-il **en production dans le cloud** ?
 
 ---
 
 ### Mission 3 — Donner une identité à chaque base de données *(20 points)*
 
-Le StatefulSet `bd` fournit **3 répliques**. L'API commandes doit joindre **précisément la réplique primaire**, à l'adresse :
+Le StatefulSet `bd` fournit **3 répliques**. Le portail doit joindre **précisément la première** (la primaire), à l'adresse :
 
 ```
 bd-0.bd-interne
@@ -154,18 +254,19 @@ bd-0.bd-interne
 
 Les Pods de la base portent le label `app: bd` et écoutent sur le port **5432**.
 
-**À produire :** `k8s/services/03-bd-headless.yaml`
+**Fichier à compléter :** `k8s/services/03-bd-interne.yaml`
 
-**À déterminer :** quel type de Service donne un **nom DNS individuel à chaque Pod** au lieu d'une seule IP virtuelle ? Quel champ, avec quelle valeur particulière, faut-il écrire ?
+**À déterminer :** quel type de Service donne un **nom DNS individuel à chaque Pod**, au lieu d'une unique IP virtuelle ? Quel **champ** faut-il écrire, et avec quelle **valeur particulière** ?
 
 **Validation :**
 ```powershell
 kubectl run dns --rm -it --image=busybox:1.36 -- sh
 #   nslookup bd-interne        -> doit renvoyer PLUSIEURS adresses (une par Pod)
-#   nslookup bd-0.bd-interne   -> doit renvoyer UNE adresse précise
+#   nslookup bd-0.bd-interne   -> doit renvoyer UNE seule adresse
+#   exit
 ```
 
-> **Piège :** vérifiez aussi le champ `serviceName` du StatefulSet fourni. Le nom de votre Service **doit** lui correspondre, sinon les noms individuels ne seront jamais créés.
+> **Piège à ne pas manquer :** examinez le champ `serviceName` du StatefulSet fourni. Le **nom** de votre Service **doit** lui correspondre exactement, sinon les noms individuels des Pods ne seront **jamais** créés.
 
 ---
 
@@ -173,43 +274,46 @@ kubectl run dns --rm -it --image=busybox:1.36 -- sh
 
 Le composant `metriques` écoute sur **deux** ports :
 
-| Usage | Port du conteneur | Nom du port dans le Deployment |
+| Usage | Port du conteneur | Nom du port déclaré dans le Deployment |
 |---|---|---|
 | Interface web | 8080 | `web` |
-| Métriques Prometheus | 9090 | `prom` |
+| Métriques | 9090 | `prom` |
 
-Le portail appelle `http://metriques` (port **80**) et `http://metriques:9090/metrics`.
+Le portail appelle `http://metriques` (port **80**) **et** `http://metriques:9090/metrics`.
 
-**À produire :** `k8s/services/04-metriques.yaml`
+**Fichier à compléter :** `k8s/services/04-metriques.yaml`
 
-**À déterminer :** comment déclarer **plusieurs ports** sur un Service ? Quelle contrainte s'applique alors obligatoirement à chaque entrée ? Et comment référencer un port du conteneur **par son nom** plutôt que par son numéro (afin que le Service reste valide si le numéro change) ?
+**À déterminer :** comment déclarer **plusieurs ports** sur un Service ? Quelle contrainte devient alors **obligatoire** pour chaque entrée ? Et comment faire pointer `targetPort` vers un port du conteneur **par son nom** plutôt que par son numéro, afin que le Service reste valide même si le numéro change ?
 
 **Validation :**
 ```powershell
-kubectl describe svc metriques      # les deux ports doivent apparaître
+kubectl describe svc metriques            # les DEUX ports doivent apparaître
 ```
 
 ---
 
 ### Mission 5 — Donner un nom interne à un service externe *(10 points)*
 
-L'API commandes doit joindre un service de paiement **hébergé à l'extérieur du cluster**, mais le code appelle un nom **interne** : `paiement-externe`. Ce nom doit renvoyer vers `api.exemple.com`.
+Le portail doit joindre un service de paiement **hébergé à l'extérieur du cluster**, mais le code appelle un nom **interne** : `paiement-externe`. Ce nom doit renvoyer vers **`example.com`**.
 
-**À produire :** `k8s/services/05-api-externe.yaml`
+**Fichier à compléter :** `k8s/services/05-paiement-externe.yaml`
 
-**À déterminer :** quel type de Service crée un simple **alias DNS** vers un nom externe, **sans sélecteur ni Pod** ?
+**À déterminer :** quel type de Service crée un simple **alias DNS** vers un nom externe, **sans sélecteur et sans aucun Pod** ?
 
 **Validation :**
 ```powershell
 kubectl run dns --rm -it --image=busybox:1.36 -- sh
-#   nslookup paiement-externe    -> doit montrer un renvoi vers api.exemple.com
+#   nslookup paiement-externe   -> doit montrer un renvoi (CNAME) vers example.com
+#   exit
 ```
+
+> Cette mission nécessite que le cluster puisse résoudre les noms publics. Si vous n'avez **aucun accès Internet**, remplacez la cible par `api-produits.default.svc.cluster.local` et signalez-le dans votre rapport.
 
 ---
 
 ### Mission 6 — L'enquête : réparer trois Services défectueux *(20 points)*
 
-Le dossier `k8s/services/06-casses/` contient **trois Services déjà écrits**… qui **ne fonctionnent pas**. Chacun comporte **une seule erreur**, et ce sont les trois erreurs les plus fréquentes en entreprise.
+Le dossier `k8s/services/06-casses/` contient **trois Services déjà écrits**… qui **ne fonctionnent pas**. Chacun comporte **une seule erreur**, et ce sont les trois fautes les plus fréquentes en entreprise.
 
 ```powershell
 kubectl apply -f k8s/services/06-casses/
@@ -221,24 +325,24 @@ kubectl apply -f k8s/services/06-casses/
 | `casse-2.yaml` | Les Endpoints sont bien remplis, mais toute connexion est **refusée** |
 | `casse-3.yaml` | Le Service semble parfait, mais le portail ne le joint **jamais** |
 
-**Pour chaque cas, votre rapport doit contenir :**
+**Pour chacun des trois cas, votre rapport doit contenir :**
 
-1. la **commande** de diagnostic qui vous a mis sur la piste ;
+1. la **commande de diagnostic** qui vous a mis sur la piste ;
 2. la **cause exacte** de la panne ;
 3. le **correctif** appliqué ;
-4. la **preuve** que la liaison fonctionne.
+4. la **preuve** que la liaison fonctionne (tuile verte + sortie de commande).
 
-> **Méthode conseillée :** procédez comme un enquêteur — `kubectl describe svc`, `kubectl get endpoints`, `kubectl get pods --show-labels`, puis comparez **ligne à ligne** le Service et le Pod. La différence entre « Endpoints vides » et « connexion refusée » vous dit **déjà** de quel côté chercher.
+> **Méthode conseillée :** procédez comme un enquêteur. `kubectl describe svc`, `kubectl get endpoints`, `kubectl get pods --show-labels`, puis comparez **ligne à ligne** le Service et les Pods. La différence entre « Endpoints vides » et « connexion refusée » vous indique **déjà** de quel côté chercher.
 
 ---
 
 ### Mission 7 — Bonus : le grand écart *(5 points)*
 
-Au choix (un seul suffit) :
+Au choix, **un seul** suffit :
 
-- **a)** Faire en sorte qu'un même client soit **toujours servi par le même Pod** de l'API produits *(indice : un champ du Service permet une « adhérence » basée sur l'IP du client)*.
-- **b)** Créer un Service **sans sélecteur** pointant vers une adresse IP **externe fixe**, en écrivant vous-même ses Endpoints.
-- **c)** Écrire un Service de type `LoadBalancer` pour le portail et **expliquer** ce que devient `EXTERNAL-IP` sur Docker Desktop, puis ce qu'il deviendrait sur AWS.
+- **a)** Faire en sorte qu'un même client soit **toujours servi par le même Pod** de l'API produits. *(Indice : un champ du Service permet une « adhérence » fondée sur l'IP du client.)*
+- **b)** Créer un Service **sans sélecteur** pointant vers une adresse IP externe fixe, en écrivant **vous-même** ses Endpoints.
+- **c)** Écrire un Service de type `LoadBalancer` pour le portail, puis **expliquer** ce que devient `EXTERNAL-IP` sur Docker Desktop, et ce qu'il deviendrait sur AWS.
 
 ---
 
@@ -251,11 +355,14 @@ Un script vous donne votre score **à tout moment** :
 ```
 
 ```
-[OK]     Mission 1 — api-produits ......... 15/15
-[OK]     Mission 2 — portail .............. 15/15
-[ÉCHEC]  Mission 3 — bd-interne ...........  0/20   (nslookup bd-0.bd-interne : aucune réponse)
-...
-SCORE : 45/100
+[OK]     Mission 1 - api-produits ............. 15/15
+[OK]     Mission 2 - portail .................. 15/15
+[ECHEC]  Mission 3 - bd-interne ...............  0/20   -> clusterIP doit valoir None
+[OK]     Mission 4 - metriques ................ 15/15
+[ECHEC]  Mission 5 - paiement-externe .........  0/10   -> Service introuvable
+[ECHEC]  Mission 6 - reparations ..............  7/20   -> cache : aucun Pod ne repond
+
+SCORE : 52 / 100
 ```
 
 Le script **ne donne aucune solution** : il indique seulement ce qui échoue et **où regarder**.
@@ -264,27 +371,25 @@ Le script **ne donne aucune solution** : il indique seulement ce qui échoue et 
 
 ## Livrables
 
-1. Le dossier **`k8s/services/`** complet (vos 5 Services écrits + les 3 réparés).
+1. Le dossier **`k8s/services/`** complet : vos 5 Services écrits et les 3 Services réparés.
 2. Un **`RAPPORT.md`** contenant :
-   - pour **chaque** Service : le **type choisi** et une **justification en deux phrases** (« pourquoi ce type et pas un autre ») ;
+   - pour **chaque** Service : le **type choisi** et une **justification en deux phrases** (« pourquoi celui-ci et pas un autre ») ;
    - l'**enquête complète** de la mission 6 (commande → cause → correctif → preuve) ;
-   - une **capture** du tableau de bord avec **sept tuiles vertes** ;
-   - une **capture** de `kubectl get svc` montrant **tous** vos Services et leurs types ;
-   - vos réponses aux **questions de réflexion** ci-dessous.
+   - une **capture** du tableau de bord affichant **8 / 8** ;
+   - une **capture** de `kubectl get svc` montrant tous vos Services et leurs types ;
+   - vos réponses aux **questions de réflexion**.
 3. La sortie finale de `.\outils\valider.ps1`.
 
 ---
 
 ## Questions de réflexion
 
-À traiter dans le rapport :
-
 1. Pourquoi l'application ne pouvait-elle **absolument pas** fonctionner sans Services, alors que **tous** les Pods étaient `Running` ?
 2. Quelle est la différence concrète entre une tuile **rouge** et une tuile **orange** ? Que vous apprend chacune sur l'endroit où se trouve l'erreur ?
-3. Pourquoi le Service de la base de données doit-il être **headless**, alors qu'un ClusterIP ordinaire suffit pour l'API produits ?
+3. Pourquoi le Service de la base de données doit-il être **headless**, alors qu'un Service ordinaire suffit pour l'API produits ?
 4. Que contient exactement la liste des **Endpoints**, et **qui** la met à jour ? Que se passe-t-il lorsqu'un Pod devient `NotReady` ?
-5. Vous supprimez un Pod de l'API produits et Kubernetes en recrée un avec une **IP différente**. Pourquoi le portail continue-t-il de fonctionner **sans aucune modification** ?
-6. En production, exposeriez-vous dix applications avec dix Services `LoadBalancer` ? Justifiez, et proposez une alternative.
+5. Vous supprimez un Pod de l'API produits ; Kubernetes en recrée un avec une **adresse IP différente**. Pourquoi le portail continue-t-il de fonctionner **sans la moindre modification** ?
+6. En production, exposeriez-vous dix applications avec dix Services de type `LoadBalancer` ? Justifiez, et proposez une alternative.
 
 ---
 
@@ -292,13 +397,13 @@ Le script **ne donne aucune solution** : il indique seulement ce qui échoue et 
 
 | Élément | Points |
 |---|---|
-| Mission 1 — ClusterIP et découverte DNS | 15 |
-| Mission 2 — Exposition externe | 15 |
+| Mission 1 — Service interne et découverte DNS | 15 |
+| Mission 2 — Exposition externe sur le port 30500 | 15 |
 | Mission 3 — Service headless et identités stables | 20 |
 | Mission 4 — Multi-port et ports nommés | 15 |
-| Mission 5 — ExternalName | 10 |
-| Mission 6 — Diagnostic et réparation (3 × 6,67) | 20 |
-| Qualité du rapport et justifications | 5 |
+| Mission 5 — Alias vers un service externe | 10 |
+| Mission 6 — Diagnostic et réparation (3 pannes) | 20 |
+| Qualité du rapport et justification des choix | 5 |
 | **Bonus** — Mission 7 | **+5** |
 | **Total** | **100 (+5)** |
 
@@ -310,44 +415,898 @@ Le script **ne donne aucune solution** : il indique seulement ce qui échoue et 
 
 | Critère | Attendu |
 |---|---|
-| Tableau de bord | **7 tuiles vertes** |
-| Types de Services | Chacun **justifié** et **adapté** à son usage |
+| Tableau de bord | **8 / 8** tuiles vertes |
+| Types de Services | Chacun **adapté** à son usage et **justifié** |
 | DNS individuel | `bd-0.bd-interne` résolu vers **un seul** Pod |
-| Multi-port | Les deux ports visibles dans `describe svc`, `targetPort` **par nom** |
+| Multi-port | Les deux ports visibles, `targetPort` référencé **par nom** |
 | Enquête | Les 3 pannes **identifiées, expliquées et corrigées** |
 | Résilience | Après suppression d'un Pod, le portail **continue** de fonctionner |
-| Aucune IP en dur | Uniquement des **noms DNS** et des **sélecteurs** |
+| Aucune IP en dur | Uniquement des **noms DNS** et des **sélecteurs de labels** |
 
 ---
 
-## Boîte à outils (aucune solution, seulement des pistes)
+## Boîte à outils
+
+Aucune solution ici — seulement des pistes.
 
 ```powershell
 kubectl get svc                              # types, IP, ports
 kubectl describe svc <nom>                   # détails + Endpoints
-kubectl get endpoints <nom>                  # QUI est derrière le Service ?
+kubectl get endpoints <nom>                  # QUI se trouve derrière le Service ?
 kubectl get pods --show-labels               # les labels réels des Pods
 kubectl get pods -l app=<valeur>             # tester un sélecteur
-kubectl port-forward pod/<pod> 5000:5000     # accéder à un Pod SANS Service
-kubectl run test --rm -it --image=busybox:1.36 -- sh    # nslookup, wget
+kubectl port-forward deploy/portail 5000:5000    # accéder à un Pod SANS Service
+kubectl run test --rm -it --image=busybox:1.36 -- sh    # puis nslookup / wget
 kubectl logs -l app=portail --tail=30        # ce que le portail n'arrive pas à joindre
+kubectl delete svc <nom>                     # repartir de zéro sur un Service
 ```
 
 **Les trois questions qui débloquent 90 % des situations :**
 
-1. Le Service **existe-t-il** avec le **bon nom** ? *(sinon → rouge : rien à résoudre)*
-2. Les **Endpoints** sont-ils remplis ? *(vides → le **sélecteur** ne correspond à aucun label)*
+1. Le Service **existe-t-il**, avec le **bon nom** ? *(sinon → tuile rouge : il n'y a rien à déboguer, il faut l'écrire)*
+2. Les **Endpoints** sont-ils remplis ? *(vides → le **sélecteur** ne correspond à aucun label de Pod)*
 3. Le **`targetPort`** correspond-il au port **réellement écouté** par le conteneur ? *(sinon → connexion refusée)*
 
 ---
+---
 
-## Rappels théoriques utiles
+# ANNEXE A — Les applications
 
-- Les concepts : **[01-CONCEPTS-SERVICES.md](../projet11-kubernetes-services/01-CONCEPTS-SERVICES.md)**
-- La référence exhaustive (tous les types, headless, ExternalName, ports nommés, Endpoints) : **[03-TYPES-DE-SERVICES-EXHAUSTIF.md](../projet11-kubernetes-services/03-TYPES-DE-SERVICES-EXHAUSTIF.md)**
-- Les commandes : **[02-COMMANDES.md](../projet11-kubernetes-services/02-COMMANDES.md)**
+> **Ne modifiez aucun de ces fichiers.** Recopiez-les tels quels aux chemins indiqués.
 
-> Tout ce dont vous avez besoin s'y trouve. **Aucune** solution toute faite n'est fournie pour ce projet : c'est à vous d'assembler les pièces.
+## A.1 — Le micro-service générique
+
+Cette **unique** application sert à cinq composants (`api-produits`, `api-commandes`, `cache`, `notifications`, `bd`). Son nom et son port sont fixés par des **variables d'environnement**.
+
+### Fichier : `apps/micro/app.py`
+
+```python
+"""Micro-service generique de demonstration.
+
+La meme image sert a plusieurs composants : le nom et le port d'ecoute sont
+fournis par des variables d'environnement (APP_NAME, PORT).
+Chaque reponse contient le nom du Pod, ce qui rend visible la repartition
+de charge realisee par un Service.
+"""
+
+import os
+import socket
+
+from flask import Flask, jsonify
+
+app = Flask(__name__)
+
+NOM = os.environ.get("APP_NAME", "micro")
+PORT = int(os.environ.get("PORT", "8000"))
+
+
+@app.route("/")
+@app.route("/ping")
+def ping():
+    return jsonify(service=NOM, pod=socket.gethostname(), port=PORT)
+
+
+@app.route("/health")
+def health():
+    return "OK", 200
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=PORT)
+```
+
+### Fichier : `apps/micro/requirements.txt`
+
+```text
+flask==3.0.3
+```
+
+### Fichier : `apps/micro/Dockerfile`
+
+```dockerfile
+FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY app.py .
+CMD ["python", "app.py"]
+```
+
+---
+
+## A.2 — Le composant « metriques » (deux ports)
+
+Cette application écoute **simultanément** sur deux ports : `8080` (interface web) et `9090` (métriques). C'est elle qui rend la mission 4 possible.
+
+### Fichier : `apps/metriques/app.py`
+
+```python
+"""Composant exposant DEUX ports simultanement.
+
+  - 8080 : interface web         (route /ping)
+  - 9090 : metriques Prometheus  (route /metrics)
+
+Deux serveurs Flask tournent dans deux fils d'execution distincts.
+"""
+
+import socket
+import threading
+
+from flask import Flask, jsonify
+
+web = Flask("web")
+prom = Flask("prom")
+
+
+@web.route("/")
+@web.route("/ping")
+def ping():
+    return jsonify(service="metriques", pod=socket.gethostname(), port=8080)
+
+
+@web.route("/health")
+def health_web():
+    return "OK", 200
+
+
+@prom.route("/metrics")
+def metrics():
+    pod = socket.gethostname()
+    corps = (
+        "# HELP demo_requetes_total Nombre total de requetes\n"
+        "# TYPE demo_requetes_total counter\n"
+        'demo_requetes_total{pod="%s"} 42\n' % pod
+    )
+    return corps, 200, {"Content-Type": "text/plain; charset=utf-8"}
+
+
+@prom.route("/health")
+def health_prom():
+    return "OK", 200
+
+
+def demarrer(application, port):
+    application.run(host="0.0.0.0", port=port)
+
+
+if __name__ == "__main__":
+    threading.Thread(target=demarrer, args=(prom, 9090), daemon=True).start()
+    demarrer(web, 8080)
+```
+
+### Fichier : `apps/metriques/requirements.txt`
+
+```text
+flask==3.0.3
+```
+
+### Fichier : `apps/metriques/Dockerfile`
+
+```dockerfile
+FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY app.py .
+CMD ["python", "app.py"]
+```
+
+---
+
+## A.3 — Le portail (tableau de bord)
+
+C'est lui qui affiche les **8 tuiles** et votre score en direct.
+
+### Fichier : `apps/portail/app.py`
+
+```python
+"""Tableau de bord des liaisons du cluster.
+
+Pour chaque liaison, le portail distingue TROIS situations :
+  - ROUGE  : le nom DNS n'existe pas       -> le Service n'a pas ete cree
+  - ORANGE : le nom resout, aucune reponse -> selecteur ou port errone
+  - VERT   : la communication fonctionne   -> le Service est correct
+"""
+
+import socket
+import urllib.error
+import urllib.parse
+import urllib.request
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+DELAI = 1.5          # secondes
+PORT_ATTENDU = 30500  # port par lequel le portail doit etre consulte
+
+CIBLES = [
+    {"cle": "externe", "titre": "Acces externe", "mode": "externe",
+     "aide": "Le portail doit etre consulte via http://localhost:30500"},
+    {"cle": "produits", "titre": "API Produits", "mode": "http",
+     "url": "http://api-produits/ping"},
+    {"cle": "bd", "titre": "Base de donnees (bd-0)", "mode": "http",
+     "url": "http://bd-0.bd-interne:5432/ping"},
+    {"cle": "metriques", "titre": "Metriques (2 ports)", "mode": "http2",
+     "url": "http://metriques/ping", "url2": "http://metriques:9090/metrics"},
+    {"cle": "paiement", "titre": "Paiement externe", "mode": "dns",
+     "hote": "paiement-externe"},
+    {"cle": "commandes", "titre": "API Commandes", "mode": "http",
+     "url": "http://api-commandes/ping"},
+    {"cle": "cache", "titre": "Cache", "mode": "http",
+     "url": "http://cache/ping"},
+    {"cle": "notifications", "titre": "Notifications", "mode": "http",
+     "url": "http://notifications/ping"},
+]
+
+
+def resout(hote):
+    try:
+        socket.getaddrinfo(hote, None)
+        return True
+    except socket.gaierror:
+        return False
+
+
+def tester_http(url):
+    hote = urllib.parse.urlparse(url).hostname
+    if not resout(hote):
+        return "rouge", "nom DNS introuvable : le Service n'existe pas"
+    try:
+        with urllib.request.urlopen(url, timeout=DELAI) as reponse:
+            corps = reponse.read(160).decode("utf-8", "ignore")
+        return "vert", corps.strip()
+    except urllib.error.HTTPError as err:
+        return "orange", "reponse HTTP %s" % err.code
+    except Exception as err:
+        return "orange", "nom resolu mais aucune reponse (%s)" % type(err).__name__
+
+
+def evaluer(cible):
+    mode = cible["mode"]
+
+    if mode == "externe":
+        port = (request.host.split(":") + ["80"])[1]
+        if str(port) == str(PORT_ATTENDU):
+            return "vert", "consulte via le port %s" % PORT_ATTENDU
+        return "orange", "consulte via le port %s : ecrivez le Service du portail" % port
+
+    if mode == "dns":
+        if resout(cible["hote"]):
+            return "vert", "le nom %s est resolu" % cible["hote"]
+        return "rouge", "le nom %s n'est pas resolu" % cible["hote"]
+
+    if mode == "http2":
+        etat1, det1 = tester_http(cible["url"])
+        etat2, det2 = tester_http(cible["url2"])
+        if etat1 == "vert" and etat2 == "vert":
+            return "vert", "les deux ports repondent"
+        if etat1 == "rouge" or etat2 == "rouge":
+            return "rouge", "port 80 : %s | port 9090 : %s" % (det1, det2)
+        return "orange", "port 80 : %s | port 9090 : %s" % (det1, det2)
+
+    return tester_http(cible["url"])
+
+
+COULEURS = {"vert": "#16a34a", "orange": "#ea580c", "rouge": "#b91c1c"}
+
+
+@app.route("/health")
+def health():
+    return "OK", 200
+
+
+@app.route("/")
+def accueil():
+    resultats = []
+    for cible in CIBLES:
+        etat, detail = evaluer(cible)
+        resultats.append((cible["titre"], etat, detail))
+
+    score = sum(1 for _, etat, _ in resultats if etat == "vert")
+    total = len(resultats)
+
+    tuiles = ""
+    for titre, etat, detail in resultats:
+        tuiles += """
+        <div class="tuile" style="border-left:10px solid {couleur}">
+          <div class="t">{titre}</div>
+          <div class="e" style="color:{couleur}">{etat}</div>
+          <div class="d">{detail}</div>
+        </div>""".format(couleur=COULEURS[etat], titre=titre,
+                         etat=etat.upper(), detail=detail)
+
+    couleur_score = "#16a34a" if score == total else "#ea580c"
+
+    return """<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="3">
+  <title>Mission : retablir les communications</title>
+  <style>
+    body {{ font-family: system-ui, sans-serif; background:#0f172a; color:#e2e8f0;
+            margin:0; padding:32px; }}
+    h1 {{ margin:0 0 4px; }}
+    .sous {{ color:#94a3b8; margin-bottom:24px; }}
+    .score {{ font-size:2.4rem; font-weight:800; color:{couleur_score}; margin-bottom:24px; }}
+    .grille {{ display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }}
+    .tuile {{ background:#1e293b; border-radius:12px; padding:16px 20px;
+              box-shadow:0 6px 20px rgba(0,0,0,.35); }}
+    .t {{ font-weight:700; font-size:1.05rem; }}
+    .e {{ font-weight:800; font-size:.8rem; letter-spacing:2px; margin:6px 0; }}
+    .d {{ color:#94a3b8; font-size:.85rem; word-break:break-word; }}
+    .pied {{ margin-top:28px; color:#64748b; font-size:.85rem; }}
+  </style>
+</head>
+<body>
+  <h1>Mission : retablir les communications du cluster</h1>
+  <div class="sous">Servi par le pod <strong>{pod}</strong> &middot; rafraichissement automatique toutes les 3 s</div>
+  <div class="score">{score} / {total}</div>
+  <div class="grille">{tuiles}</div>
+  <div class="pied">ROUGE : le Service n'existe pas &middot; ORANGE : selecteur ou port errone &middot; VERT : liaison etablie</div>
+</body>
+</html>""".format(pod=socket.gethostname(), score=score, total=total,
+                  tuiles=tuiles, couleur_score=couleur_score)
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
+```
+
+### Fichier : `apps/portail/requirements.txt`
+
+```text
+flask==3.0.3
+```
+
+### Fichier : `apps/portail/Dockerfile`
+
+```dockerfile
+FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY app.py .
+CMD ["python", "app.py"]
+```
+
+---
+---
+
+# ANNEXE B — Les manifestes fournis
+
+> **Ne modifiez aucun de ces deux fichiers.** Ils constituent l'existant auquel vos Services doivent s'adapter.
+
+## Fichier : `k8s/01-deployments.yaml`
+
+```yaml
+# ---------------------------------------------------------------------------
+# LES PODS DE LA PLATEFORME — FOURNI, NE PAS MODIFIER
+# Observez attentivement : les LABELS et les PORTS declares ici sont les seules
+# informations dont vous disposez pour ecrire vos Services.
+# ---------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portail
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: portail
+  template:
+    metadata:
+      labels:
+        app: portail
+    spec:
+      containers:
+        - name: portail
+          image: portail:1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+          readinessProbe:
+            httpGet: { path: /health, port: 5000 }
+            initialDelaySeconds: 3
+            periodSeconds: 5
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-produits
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: api-produits
+  template:
+    metadata:
+      labels:
+        app: api-produits
+    spec:
+      containers:
+        - name: micro
+          image: micro:1.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - { name: APP_NAME, value: "api-produits" }
+            - { name: PORT,     value: "8000" }
+          ports:
+            - containerPort: 8000
+          readinessProbe:
+            httpGet: { path: /health, port: 8000 }
+            initialDelaySeconds: 3
+            periodSeconds: 5
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-commandes
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api-commandes
+  template:
+    metadata:
+      labels:
+        app: api-commandes
+    spec:
+      containers:
+        - name: micro
+          image: micro:1.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - { name: APP_NAME, value: "api-commandes" }
+            - { name: PORT,     value: "8000" }
+          ports:
+            - containerPort: 8000
+          readinessProbe:
+            httpGet: { path: /health, port: 8000 }
+            initialDelaySeconds: 3
+            periodSeconds: 5
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cache
+  template:
+    metadata:
+      labels:
+        app: cache
+    spec:
+      containers:
+        - name: micro
+          image: micro:1.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - { name: APP_NAME, value: "cache" }
+            - { name: PORT,     value: "6379" }
+          ports:
+            - containerPort: 6379
+          readinessProbe:
+            httpGet: { path: /health, port: 6379 }
+            initialDelaySeconds: 3
+            periodSeconds: 5
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notifications
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: notifications
+  template:
+    metadata:
+      labels:
+        app: notifications
+    spec:
+      containers:
+        - name: micro
+          image: micro:1.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - { name: APP_NAME, value: "notifications" }
+            - { name: PORT,     value: "7000" }
+          ports:
+            - containerPort: 7000
+          readinessProbe:
+            httpGet: { path: /health, port: 7000 }
+            initialDelaySeconds: 3
+            periodSeconds: 5
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metriques
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: metriques
+  template:
+    metadata:
+      labels:
+        app: metriques
+    spec:
+      containers:
+        - name: metriques
+          image: metriques:1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: web            # <-- port NOMME
+              containerPort: 8080
+            - name: prom           # <-- port NOMME
+              containerPort: 9090
+          readinessProbe:
+            httpGet: { path: /health, port: 8080 }
+            initialDelaySeconds: 3
+            periodSeconds: 5
+```
+
+## Fichier : `k8s/02-statefulset-bd.yaml`
+
+```yaml
+# ---------------------------------------------------------------------------
+# LA BASE DE DONNEES (3 repliques) — FOURNI, NE PAS MODIFIER
+#
+# ATTENTION : le champ serviceName ci-dessous impose le NOM du Service que
+# vous devrez ecrire pour que bd-0, bd-1 et bd-2 obtiennent chacun un nom DNS.
+# ---------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: bd
+spec:
+  serviceName: bd-interne          # <-- lisez bien cette ligne
+  replicas: 3
+  selector:
+    matchLabels:
+      app: bd
+  template:
+    metadata:
+      labels:
+        app: bd
+    spec:
+      containers:
+        - name: micro
+          image: micro:1.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - { name: APP_NAME, value: "base-de-donnees" }
+            - { name: PORT,     value: "5432" }
+          ports:
+            - containerPort: 5432
+          readinessProbe:
+            httpGet: { path: /health, port: 5432 }
+            initialDelaySeconds: 3
+            periodSeconds: 5
+```
+
+---
+---
+
+# ANNEXE C — Les squelettes de Services à compléter
+
+> Recopiez ces cinq fichiers, puis **remplacez chaque `TODO`** par la bonne valeur.
+> Les lignes précédées de `# ?` sont des **questions à trancher** : à vous de décider s'il faut ajouter, modifier ou supprimer la ligne concernée.
+
+## Fichier : `k8s/services/01-api-produits.yaml`
+
+```yaml
+# MISSION 1 — Rendre l'API produits joignable depuis le portail.
+#
+# Le portail appelle :  http://api-produits        (donc le port 80)
+# Les Pods ecoutent sur : 8000
+# Les Pods portent le label : app: api-produits
+#
+# ? Quel type de Service pour une communication INTERNE au cluster ?
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-produits          # nom IMPOSE : ne pas changer
+spec:
+  type: TODO
+  selector:
+    TODO: TODO
+  ports:
+    - port: TODO              # le port par lequel les clients appellent
+      targetPort: TODO        # le port reellement ecoute par le conteneur
+```
+
+## Fichier : `k8s/services/02-portail.yaml`
+
+```yaml
+# MISSION 2 — Rendre le tableau de bord accessible depuis le navigateur,
+#             a l'adresse exacte : http://localhost:30500
+#
+# Les Pods ecoutent sur : 5000
+# Les Pods portent le label : app: portail
+#
+# ? Quel type de Service ouvre un port sur la MACHINE ?
+# ? Quelle est la plage autorisee pour ce port ?
+# ? Quel champ supplementaire faut-il ajouter pour imposer le port 30500 ?
+apiVersion: v1
+kind: Service
+metadata:
+  name: portail               # nom IMPOSE : ne pas changer
+spec:
+  type: TODO
+  selector:
+    TODO: TODO
+  ports:
+    - port: TODO
+      targetPort: TODO
+      # ? une ligne manque ici
+```
+
+## Fichier : `k8s/services/03-bd-interne.yaml`
+
+```yaml
+# MISSION 3 — Donner un nom DNS INDIVIDUEL a chaque replique de la base,
+#             afin de pouvoir joindre precisement : bd-0.bd-interne
+#
+# Les Pods ecoutent sur : 5432
+# Les Pods portent le label : app: bd
+#
+# ? Quel type de Service ne possede PAS d'IP virtuelle unique ?
+# ? Quel champ, avec quelle valeur tres particuliere, produit cet effet ?
+# ? Le nom ci-dessous doit correspondre a quel champ du StatefulSet ?
+apiVersion: v1
+kind: Service
+metadata:
+  name: bd-interne            # nom IMPOSE : ne pas changer
+spec:
+  # ? une ligne essentielle manque ici
+  selector:
+    TODO: TODO
+  ports:
+    - port: TODO
+      targetPort: TODO
+```
+
+## Fichier : `k8s/services/04-metriques.yaml`
+
+```yaml
+# MISSION 4 — Exposer DEUX ports sur un seul et meme Service.
+#
+# Le portail appelle :  http://metriques         (port 80)
+#                  et : http://metriques:9090/metrics
+#
+# Les Pods ecoutent sur : 8080 (port nomme "web") et 9090 (port nomme "prom")
+# Les Pods portent le label : app: metriques
+#
+# ? Quelle contrainte devient OBLIGATOIRE des qu'un Service expose plusieurs ports ?
+# ? Comment faire pointer targetPort vers un port du conteneur PAR SON NOM ?
+apiVersion: v1
+kind: Service
+metadata:
+  name: metriques             # nom IMPOSE : ne pas changer
+spec:
+  type: TODO
+  selector:
+    TODO: TODO
+  ports:
+    - TODO: TODO              # ? un champ obligatoire manque sur chaque entree
+      port: TODO
+      targetPort: TODO
+    - TODO: TODO
+      port: TODO
+      targetPort: TODO
+```
+
+## Fichier : `k8s/services/05-paiement-externe.yaml`
+
+```yaml
+# MISSION 5 — Faire pointer un nom INTERNE vers un service EXTERNE.
+#
+# Le portail utilise le nom : paiement-externe
+# Ce nom doit renvoyer vers : example.com
+#
+# ? Quel type de Service cree un simple alias DNS (CNAME) ?
+# ? Ce type possede-t-il un selecteur ? des ports ? des Pods ?
+apiVersion: v1
+kind: Service
+metadata:
+  name: paiement-externe      # nom IMPOSE : ne pas changer
+spec:
+  type: TODO
+  TODO: TODO                  # ? le champ qui indique la cible externe
+```
+
+---
+---
+
+# ANNEXE D — Les trois Services défectueux
+
+> Recopiez ces trois fichiers **tels quels**, appliquez-les, puis **diagnostiquez et corrigez**.
+> Chacun contient **exactement une** erreur. Ne réécrivez pas le fichier de zéro : **trouvez** la faute.
+
+## Fichier : `k8s/services/06-casses/casse-1.yaml`
+
+```yaml
+# PANNE 1
+# Symptome : le Service existe, mais "kubectl get endpoints api-commandes"
+#            renvoie <none>. Le portail affiche une tuile ORANGE.
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-commandes
+spec:
+  type: ClusterIP
+  selector:
+    app: api-commande
+  ports:
+    - port: 80
+      targetPort: 8000
+```
+
+## Fichier : `k8s/services/06-casses/casse-2.yaml`
+
+```yaml
+# PANNE 2
+# Symptome : "kubectl get endpoints cache" affiche bien une adresse IP,
+#            mais toute connexion echoue. Le portail affiche une tuile ORANGE.
+apiVersion: v1
+kind: Service
+metadata:
+  name: cache
+spec:
+  type: ClusterIP
+  selector:
+    app: cache
+  ports:
+    - port: 80
+      targetPort: 6380
+```
+
+## Fichier : `k8s/services/06-casses/casse-3.yaml`
+
+```yaml
+# PANNE 3
+# Symptome : ce Service semble parfait (type correct, selecteur correct,
+#            Endpoints remplis, ports coherents)... et pourtant le portail
+#            affiche une tuile ROUGE et ne le joint JAMAIS.
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification
+spec:
+  type: ClusterIP
+  selector:
+    app: notifications
+  ports:
+    - port: 80
+      targetPort: 7000
+```
+
+---
+---
+
+# ANNEXE E — Le script de validation
+
+## Fichier : `outils/valider.ps1`
+
+```powershell
+# ---------------------------------------------------------------------------
+# Script de validation — donne un score, JAMAIS la solution.
+# Utilisation :  .\outils\valider.ps1
+# ---------------------------------------------------------------------------
+
+$total = 0
+
+function Existe($nom) {
+    kubectl get svc $nom -o name 2>$null | Out-Null
+    return $LASTEXITCODE -eq 0
+}
+
+function Afficher($libelle, $points, $max, $note) {
+    $etat = if ($points -eq $max) { "[OK]    " } else { "[ECHEC] " }
+    $ligne = "{0} {1} {2}/{3}" -f $etat, $libelle.PadRight(34, '.'), $points, $max
+    if ($note) { $ligne += "   -> $note" }
+    Write-Host $ligne
+}
+
+Write-Host ""
+Write-Host "=== VALIDATION — Mission : retablir les communications ===" -ForegroundColor Cyan
+Write-Host ""
+
+# --- Mission 1 : api-produits ---------------------------------------------
+$p = 0; $note = ""
+if (-not (Existe "api-produits")) { $note = "Service api-produits introuvable" }
+else {
+    $eps = (kubectl get endpoints api-produits -o jsonpath="{.subsets[*].addresses[*].ip}" 2>$null)
+    $tp  = (kubectl get svc api-produits -o jsonpath="{.spec.ports[0].targetPort}" 2>$null)
+    if (-not $eps) { $note = "Endpoints vides : le selecteur ne correspond a aucun Pod" }
+    elseif ("$tp" -ne "8000") { $note = "targetPort ne correspond pas au port ecoute" }
+    else { $p = 15 }
+}
+Afficher "Mission 1 - api-produits" $p 15 $note; $total += $p
+
+# --- Mission 2 : portail ---------------------------------------------------
+$p = 0; $note = ""
+if (-not (Existe "portail")) { $note = "Service portail introuvable" }
+else {
+    $type = (kubectl get svc portail -o jsonpath="{.spec.type}" 2>$null)
+    $np   = (kubectl get svc portail -o jsonpath="{.spec.ports[0].nodePort}" 2>$null)
+    if ("$np" -ne "30500") { $note = "le port expose sur la machine doit etre 30500 (actuel : '$np')" }
+    elseif ($type -notin @("NodePort", "LoadBalancer")) { $note = "type inadapte a un acces externe" }
+    else { $p = 15 }
+}
+Afficher "Mission 2 - portail" $p 15 $note; $total += $p
+
+# --- Mission 3 : bd-interne (headless) -------------------------------------
+$p = 0; $note = ""
+if (-not (Existe "bd-interne")) { $note = "Service bd-interne introuvable (verifiez serviceName du StatefulSet)" }
+else {
+    $cip = (kubectl get svc bd-interne -o jsonpath="{.spec.clusterIP}" 2>$null)
+    $eps = (kubectl get endpoints bd-interne -o jsonpath="{.subsets[*].addresses[*].ip}" 2>$null)
+    if ("$cip" -ne "None") { $note = "ce Service ne doit PAS avoir d'IP virtuelle" }
+    elseif (-not $eps) { $note = "Endpoints vides : verifiez le selecteur" }
+    else { $p = 20 }
+}
+Afficher "Mission 3 - bd-interne" $p 20 $note; $total += $p
+
+# --- Mission 4 : metriques (multi-port) ------------------------------------
+$p = 0; $note = ""
+if (-not (Existe "metriques")) { $note = "Service metriques introuvable" }
+else {
+    $ports = (kubectl get svc metriques -o jsonpath="{.spec.ports[*].port}" 2>$null)
+    $noms  = (kubectl get svc metriques -o jsonpath="{.spec.ports[*].name}" 2>$null)
+    $cible = (kubectl get svc metriques -o jsonpath="{.spec.ports[*].targetPort}" 2>$null)
+    $liste = ($ports -split '\s+') | Where-Object { $_ }
+    if ($liste.Count -lt 2) { $note = "il manque un port : deux sont attendus (80 et 9090)" }
+    elseif (-not $noms) { $note = "chaque port doit porter un nom lorsqu'il y en a plusieurs" }
+    elseif ($cible -match '^\s*\d+(\s+\d+)*\s*$') { $note = "targetPort doit referencer les ports PAR LEUR NOM" }
+    else { $p = 15 }
+}
+Afficher "Mission 4 - metriques" $p 15 $note; $total += $p
+
+# --- Mission 5 : paiement-externe -------------------------------------------
+$p = 0; $note = ""
+if (-not (Existe "paiement-externe")) { $note = "Service paiement-externe introuvable" }
+else {
+    $type = (kubectl get svc paiement-externe -o jsonpath="{.spec.type}" 2>$null)
+    $cible = (kubectl get svc paiement-externe -o jsonpath="{.spec.externalName}" 2>$null)
+    if ("$type" -ne "ExternalName") { $note = "ce n'est pas le type attendu pour un alias DNS" }
+    elseif (-not $cible) { $note = "la cible externe n'est pas renseignee" }
+    else { $p = 10 }
+}
+Afficher "Mission 5 - paiement-externe" $p 10 $note; $total += $p
+
+# --- Mission 6 : les trois reparations --------------------------------------
+$p = 0; $notes = @()
+foreach ($cas in @(
+    @{ nom = "api-commandes"; port = "8000" },
+    @{ nom = "cache";         port = "6379" },
+    @{ nom = "notifications"; port = "7000" })) {
+
+    if (-not (Existe $cas.nom)) { $notes += "$($cas.nom) : Service introuvable"; continue }
+    $eps = (kubectl get endpoints $cas.nom -o jsonpath="{.subsets[*].addresses[*].ip}" 2>$null)
+    $tp  = (kubectl get svc $cas.nom -o jsonpath="{.spec.ports[0].targetPort}" 2>$null)
+    if (-not $eps) { $notes += "$($cas.nom) : Endpoints vides" }
+    elseif ("$tp" -ne $cas.port) { $notes += "$($cas.nom) : aucun Pod ne repond sur ce port" }
+    else { $p += 7 }
+}
+if ($p -gt 20) { $p = 20 }
+Afficher "Mission 6 - reparations" $p 20 ($notes -join " | "); $total += $p
+
+Write-Host ""
+$couleur = if ($total -ge 90) { "Green" } elseif ($total -ge 50) { "Yellow" } else { "Red" }
+Write-Host ("SCORE AUTOMATIQUE : {0} / 95" -f $total) -ForegroundColor $couleur
+Write-Host "   (+5 pour la qualite du rapport, +5 de bonus : evalues manuellement)" -ForegroundColor DarkGray
+Write-Host ""
+Write-Host "Rappel : le tableau de bord doit afficher 8 / 8 sur http://localhost:30500" -ForegroundColor DarkGray
+Write-Host ""
+```
 
 ---
 
