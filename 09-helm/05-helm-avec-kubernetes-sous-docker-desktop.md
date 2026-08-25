@@ -77,6 +77,183 @@ Helm ne remplace pas Kubernetes.
 
 Helm va **générer et gérer les ressources Kubernetes**.
 
+
+
+
+## Diagramme complet
+
+```mermaid
+flowchart TD
+
+    DEV["Développeur"]
+
+    subgraph WINDOWS["Machine Windows"]
+        PS["PowerShell / Terminal"]
+        DOCKER["Docker Desktop"]
+
+        subgraph K8S["Cluster Kubernetes local"]
+            API["Kubernetes API Server"]
+
+            DEP["Deployment"]
+            SVC["Service"]
+            CM["ConfigMap"]
+            SEC["Secret"]
+
+            POD1["Pod 1"]
+            POD2["Pod 2"]
+            POD3["Pod 3"]
+
+            C1["Conteneur"]
+            C2["Conteneur"]
+            C3["Conteneur"]
+        end
+    end
+
+    subgraph HELM["Helm Chart"]
+        CHART["Chart.yaml"]
+        VALUES["values.yaml"]
+        TEMPLATES["templates/"]
+        DEPYAML["deployment.yaml"]
+        SVCYAML["service.yaml"]
+    end
+
+    REGISTRY["Registry Docker<br/>Docker Hub / ECR / ACR / GHCR"]
+    IMAGE["Image Docker<br/>exemple : nginx:alpine"]
+
+    DEV --> PS
+
+    PS -->|"docker build"| IMAGE
+    IMAGE -->|"docker push"| REGISTRY
+
+    PS -->|"helm install / upgrade"| HELM
+
+    CHART --> TEMPLATES
+    VALUES --> TEMPLATES
+    DEPYAML --> TEMPLATES
+    SVCYAML --> TEMPLATES
+
+    HELM -->|"Helm génère les manifests YAML"| API
+
+    PS -->|"kubectl"| API
+
+    API --> DEP
+    API --> SVC
+    API --> CM
+    API --> SEC
+
+    DEP --> POD1
+    DEP --> POD2
+    DEP --> POD3
+
+    POD1 --> C1
+    POD2 --> C2
+    POD3 --> C3
+
+    REGISTRY -->|"Pull image"| C1
+    REGISTRY -->|"Pull image"| C2
+    REGISTRY -->|"Pull image"| C3
+
+    SVC -->|"Expose / équilibre le trafic"| POD1
+    SVC -->|"Expose / équilibre le trafic"| POD2
+    SVC -->|"Expose / équilibre le trafic"| POD3
+```
+
+### Lecture simplifiée du diagramme
+
+```text
+Code source
+    ↓
+Docker build
+    ↓
+Image Docker
+    ↓
+Docker Hub / Registry
+    ↓
+Helm Chart
+    ↓
+Helm génère les fichiers Kubernetes
+    ↓
+Kubernetes API Server
+    ↓
+Deployment
+    ↓
+Pods
+    ↓
+Containers
+```
+
+Et la différence importante à faire comprendre est :
+
+```text
+Docker
+  → construit l'image
+
+Helm
+  → prépare et gère le déploiement Kubernetes
+
+Kubernetes
+  → orchestre et maintient les Pods
+
+kubectl
+  → permet à l'administrateur de communiquer avec Kubernetes
+```
+
+## Diagramme simplifié
+
+```mermaid
+flowchart LR
+
+    USER["Utilisateur"]
+
+    HELM["Helm"]
+    KUBECTL["kubectl"]
+
+    subgraph DD["Docker Desktop"]
+        K8S["Kubernetes"]
+
+        DEP["Deployment"]
+        SVC["Service"]
+
+        P1["Pod 1"]
+        P2["Pod 2"]
+
+        C1["Container"]
+        C2["Container"]
+    end
+
+    CHART["Helm Chart<br/>Chart.yaml<br/>values.yaml<br/>templates/"]
+
+    USER --> HELM
+    USER --> KUBECTL
+
+    CHART --> HELM
+
+    HELM -->|"install / upgrade"| K8S
+    KUBECTL -->|"get / describe / logs"| K8S
+
+    K8S --> DEP
+    K8S --> SVC
+
+    DEP --> P1
+    DEP --> P2
+
+    P1 --> C1
+    P2 --> C2
+
+    SVC --> P1
+    SVC --> P2
+```
+
+
+
+
+
+
+
+
+
+
+
 ---
 
 # 3. Rappel : Kubernetes sans Helm
