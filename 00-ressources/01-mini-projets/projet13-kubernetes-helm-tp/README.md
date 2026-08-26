@@ -54,7 +54,7 @@ helm install hedge-dev .\chart -f .\chart\environments\values-dev.yaml -n hedge-
 | `chart/` | Étudiant (à compléter) | Le Chart Helm en squelette |
 | `chart/casses/` | Étudiant (à lire, copier, réparer) | Les 3 templates défectueux de la mission 6 |
 | `outils/valider.ps1` | Étudiant | Score automatique à tout moment |
-| `CORRECTION-PROF.md` | **Enseignant uniquement** | Solutions détaillées, barème, pièges, script démo |
+| `CORRECTION-PROF.md` | **à ne consulter qu'après avoir sérieusement essayé** | Solutions détaillées, barème, pièges, script démo |
 
 ---
 
