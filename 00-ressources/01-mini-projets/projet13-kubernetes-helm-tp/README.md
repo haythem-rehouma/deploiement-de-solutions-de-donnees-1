@@ -4,7 +4,7 @@
 
 ---
 
-## En une phrase
+## Résumé
 
 Vous prenez une application composée de **deux services Python** et vous la déployez **trois fois côte à côte** — en `DEV` (bleu), `STAGING` (orange), `PROD` (vert) — avec **un seul Chart Helm** et **trois fichiers de valeurs**. À la fin, vous avez trois dashboards colorés dans votre navigateur, vous savez faire un `helm upgrade` + `rollback`, et vous avez réparé trois templates truffés de bugs réels.
 
