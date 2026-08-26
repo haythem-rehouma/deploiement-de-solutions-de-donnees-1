@@ -1,0 +1,34 @@
+
+apt install 
+pip install 
+
+helm install une application dans K8s à partir d'un Helm Chart.
+Par exemple,
+
+helm install mon-nginx bitnami/nginx  ==> déploie Nginx dans le cluster Kubernetes.
+
+APT = paquets Linux.
+PIP = paquets Python.
+HELM = applications Kubernetes.
+
+apt => Ubuntu
+yum => Redhat
+npm => Node.js 
+pip => Python
+Helm => K8s
+
+helm install cache-prod bitnami/redis
+
+
+INSTALLATION DE HELM DANS WINDOWS AVEC DOCKER DESKTOP
+kubectl get nodes
+winget install Helm.Helm
+helm version
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo update
+helm repo list
+helm search repo bitnami
+helm search repo nginx
+helm install cache-prod bitnami/redis
+helm list
+kubectl get pods
