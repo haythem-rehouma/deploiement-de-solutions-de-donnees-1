@@ -1,0 +1,18 @@
+# Mission 4 - Environnement DEV
+# ? 1 replique portail et api, bandeau bleu #2563eb, NodePort 30130.
+# Ne redefinissez ici QUE les valeurs qui differencient DEV des autres envs.
+# Les valeurs communes (image, targetPort, ...) restent dans values.yaml.
+
+environment: TODO
+
+banniere:
+  message: TODO
+  couleur: TODO
+
+portail:
+  replicas: TODO
+  service:
+    nodePort: TODO
+
+api:
+  replicas: TODO

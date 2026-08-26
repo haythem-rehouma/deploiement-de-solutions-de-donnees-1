@@ -1,0 +1,14 @@
+# Mission 2 - Service ClusterIP pour l'api. Un seul port. Pas de nodePort.
+apiVersion: v1
+kind: Service
+metadata:
+  name: TODO
+  labels:
+    TODO
+spec:
+  type: TODO
+  selector:
+    TODO
+  ports:
+    - port: TODO
+      targetPort: TODO

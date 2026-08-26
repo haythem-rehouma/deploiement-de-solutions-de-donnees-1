@@ -1,0 +1,41 @@
+# Mission 2 - Deployment du portail. Utilisez :
+#   - .Values.portail.replicas
+#   - .Values.portail.image.{repository,tag,pullPolicy}
+#   - .Values.portail.service.targetPort
+#   - .Values.environment                    (pour ENVIRONMENT)
+#   - .Values.banniere.{couleur,message}     (pour THEME_COLOR, BANNIERE_MESSAGE)
+#   - .Chart.AppVersion                      (pour APP_VERSION)
+#   - Le nom du Service api construit avec .Release.Name  (pour BACKEND_URL)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: TODO
+  labels:
+    TODO
+spec:
+  replicas: TODO
+  selector:
+    matchLabels:
+      TODO
+  template:
+    metadata:
+      labels:
+        TODO
+    spec:
+      containers:
+        - name: portail
+          image: TODO
+          imagePullPolicy: TODO
+          ports:
+            - containerPort: TODO
+          env:
+            - name: ENVIRONMENT
+              value: TODO
+            # ? ajoutez APP_VERSION, THEME_COLOR, BANNIERE_MESSAGE,
+            #   BACKEND_URL, REPLICAS_INFO
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: TODO
+            initialDelaySeconds: 3
+            periodSeconds: 5

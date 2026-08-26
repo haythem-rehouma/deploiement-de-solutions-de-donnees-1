@@ -1,0 +1,45 @@
+# PANNE 2 — a copier dans templates/ pour observer le bug.
+#
+# Contexte : on ajoute un composant "worker".
+#
+# Symptome a observer : "helm install" fonctionne. Un jour, l'equipe veut
+# promouvoir la meme release en changeant simplement une valeur :
+#
+#   helm upgrade hedge-dev ./chart -f ./chart/environments/values-dev.yaml \
+#     --set environment=recette -n hedge-dev
+#
+# Kubernetes refuse net :
+#
+#   Error: UPGRADE FAILED: cannot patch "hedge-dev-worker" with kind Deployment:
+#   Deployment.apps "hedge-dev-worker" is invalid: spec.selector: Invalid value:
+#   ...: field is immutable
+#
+# Question : quel label est-il DANGEREUX de mettre dans "spec.selector.matchLabels" ?
+# Regle a retenir : le selector d'un Deployment doit contenir UNIQUEMENT des
+# labels qui ne changeront JAMAIS pour cette instance.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "hedge.fullname" (dict "root" . "composant" "worker") }}
+  labels:
+    {{- include "hedge.labels" (dict "root" . "composant" "worker") | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Chart.Name }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: worker
+      hedge/environment: {{ .Values.environment | quote }}
+  template:
+    metadata:
+      labels:
+        {{- include "hedge.labels" (dict "root" . "composant" "worker") | nindent 8 }}
+    spec:
+      containers:
+        - name: worker
+          image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ENVIRONMENT
+              value: {{ .Values.environment | quote }}

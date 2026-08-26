@@ -1,0 +1,17 @@
+# Mission 2 - Service pour le portail. Type NodePort.
+# ? Utilisez la condition {{- if eq .Values.portail.service.type "NodePort" }} ... {{- end }}
+#   pour n'inclure "nodePort" QUE si c'est bien un NodePort.
+apiVersion: v1
+kind: Service
+metadata:
+  name: TODO
+  labels:
+    TODO
+spec:
+  type: TODO
+  selector:
+    TODO
+  ports:
+    - port: TODO
+      targetPort: TODO
+      # ? nodePort uniquement si type == NodePort

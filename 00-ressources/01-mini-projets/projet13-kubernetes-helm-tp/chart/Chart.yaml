@@ -1,0 +1,10 @@
+# Mission 1 : renseigner les champs manquants.
+# apiVersion doit valoir v2 (v1 est deprecise depuis Helm 3).
+# type doit valoir "application" (par opposition a "library").
+
+apiVersion: TODO
+name: hedge
+description: TODO
+type: TODO
+version: 0.1.0
+appVersion: "1.0.0"

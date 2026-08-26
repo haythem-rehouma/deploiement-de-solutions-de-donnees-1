@@ -1,0 +1,37 @@
+# PANNE 3 — a copier dans templates/ pour observer le bug.
+#
+# Contexte : on ajoute un composant "cache".
+#
+# Symptome a observer : "helm install" plante avec une erreur difficile a
+# lire au premier coup d'oeil :
+#
+#   Error: INSTALLATION FAILED: template: hedge/templates/casse-3-cache-deployment.yaml
+#   ...  executing "..." at <.Values.portal.replicas>:
+#   nil pointer evaluating interface {}.replicas
+#
+# Question : lisez bien le chemin dans le message d'erreur. Rien dans
+# values.yaml ne s'appelle ainsi. UNE lettre est en trop. Laquelle ?
+# (Astuce : "helm template --debug" imprime le rendu partiel.)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "hedge.fullname" (dict "root" . "composant" "cache") }}
+  labels:
+    {{- include "hedge.labels" (dict "root" . "composant" "cache") | nindent 4 }}
+spec:
+  replicas: {{ .Values.portal.replicas }}
+  selector:
+    matchLabels:
+      {{- include "hedge.selectorLabels" (dict "root" . "composant" "cache") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "hedge.selectorLabels" (dict "root" . "composant" "cache") | nindent 8 }}
+    spec:
+      containers:
+        - name: cache
+          image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ENVIRONMENT
+              value: {{ .Values.environment | quote }}

@@ -1,0 +1,16 @@
+# Mission 4 - Environnement STAGING
+# ? 2 repliques portail et api, bandeau orange #ea580c, NodePort 30131.
+
+environment: TODO
+
+banniere:
+  message: TODO
+  couleur: TODO
+
+portail:
+  replicas: TODO
+  service:
+    nodePort: TODO
+
+api:
+  replicas: TODO

@@ -1,0 +1,21 @@
+# PANNE 1 — a copier dans templates/ pour observer le bug.
+#
+# Contexte : on souhaite ajouter un ConfigMap partage.
+#
+# Symptome a observer : deployez hedge-dev puis, DANS LE MEME NAMESPACE,
+# essayez de deployer hedge-staging. La seconde installation plantera avec :
+#
+#   Error: rendered manifests contain a resource that already exists.
+#   Unable to continue with install: ConfigMap "hedge-config" in namespace
+#   "hedge-dev" exists and cannot be imported into the current release
+#
+# Question : ce ConfigMap est-il vraiment "propre a la release" ?
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hedge-config
+  labels:
+    {{- include "hedge.labels" (dict "root" . "composant" "config") | nindent 4 }}
+data:
+  timezone: "America/Toronto"
+  langue: "fr-CA"

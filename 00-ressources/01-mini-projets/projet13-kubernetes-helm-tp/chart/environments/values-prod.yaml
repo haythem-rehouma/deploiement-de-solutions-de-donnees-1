@@ -1,0 +1,16 @@
+# Mission 4 - Environnement PROD
+# ? 3 repliques portail et api, bandeau vert #16a34a, NodePort 30132.
+
+environment: TODO
+
+banniere:
+  message: TODO
+  couleur: TODO
+
+portail:
+  replicas: TODO
+  service:
+    nodePort: TODO
+
+api:
+  replicas: TODO
