@@ -12,7 +12,8 @@ Créer un laboratoire réutilisable pour tous les chapitres, tester six connexio
 4. Ouvrir **PowerShell**, puis se placer dans le laboratoire.
 
 ```powershell
-Set-Location "C:\Users\rehou\Downloads\Compressed\deploiement-de-solutions-de-donnees-main\deploiement-de-solutions-de-donnees-main\12-ansible-playbooks-roles\laboratoire-docker-desktop"
+git clone https://github.com/haythem-rehouma/laboratoire-docker-desktop.git
+cd laboratoire-docker-desktop
 docker version
 docker compose version
 docker info --format '{{.OSType}}'
